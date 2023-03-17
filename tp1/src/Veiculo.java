@@ -11,10 +11,14 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.Timer;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 public class Veiculo {
 
-    public int x;
-    public int y;
+    public double x;
+    public double y;
 
 
     private DatagramSocket socketEnviar;
@@ -49,7 +53,28 @@ public class Veiculo {
         new Thread(() -> { // enviar msg period -> broadcast
             try {
 
-                //ler ficheiro e tirar coords
+
+//ler ficheiro e tirar coords//////////////////////////////////////////////////////////////////////////////////////
+                String currentDirectory = Paths.get("").toAbsolutePath().toString();
+                String directoryPrefix = currentDirectory.substring(0, Math.min(currentDirectory.length(), 3));
+
+                // Read the file with the prefix in the parent directory
+                // Read the coordinates from the file
+                try (BufferedReader reader = new BufferedReader(new FileReader("../" + directoryPrefix + ".xy"))) {
+
+                    String line = reader.readLine();
+                    String[] tokens = line.split(" ");
+
+                    x = Double.parseDouble(tokens[0]);
+                    y = Double.parseDouble(tokens[1]);
+
+                    //System.out.println("x = " + x);
+                    //System.out.println("y = " + y);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 socketEnviar.setBroadcast(true);
 
