@@ -5,8 +5,11 @@ import java.util.List;
 public class Packet implements Serializable{
 
     private int msgType;//tipo de mensagem a enviar //0
-    
     private int custo;
+    private String matricula;
+    private double velocidade;
+    private String tipo;
+
     
 
     public Packet() {
