@@ -49,9 +49,18 @@ public class Veiculo {
         new Thread(() -> { // enviar msg period -> broadcast
             try {
 
-                Packet p = new Packet();
-                DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, ipRSU, 4321);
+                //ler ficheiro e tirar coords
+
+                socketEnviar.setBroadcast(true);
+
+                // create the broadcast address
+                InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
+
+                Packet p = new Packet(0,0,0,0,);
+                DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
                 socketEnviar.send(request);
+
+                println("Pacote enviado a para broadcast!")
 
                 //sleep(10000);
 

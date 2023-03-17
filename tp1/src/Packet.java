@@ -9,7 +9,9 @@ public class Packet implements Serializable{
     private String matricula;
     private double velocidade;
     private String tipo;
+
     private EstadoPiso estadoPiso;
+
 
     //hoe to create enum
     public enum EstadoPiso {
@@ -25,24 +27,6 @@ public class Packet implements Serializable{
         this.estadoPiso = estadoPiso;
     }
     
-
-    public Packet() {
-        this.msgType = 0;
-        this.custo = 0;
-        this.matricula = "";
-        this.velocidade = 0;
-        this.tipo = "";
-        this.estadoPiso = EstadoPiso.SECO;
-    }
-
-    public Packet(Packet p){
-        this.msgType = p.getMsgType();
-        this.custo = p.getCusto();
-        this.matricula = p.getMatricula();
-        this.velocidade = p.getVelocidade();
-        this.tipo = p.getTipo();
-        this.estadoPiso = p.getEstadoPiso();
-    }
 
     public Packet(byte[] bytes) {
 
@@ -73,18 +57,6 @@ public class Packet implements Serializable{
     }
 
     
-
-    public int getMsgType() {
-        return msgType;
-    }
-
-    public void setMsgType(int msgType) {
-        this.msgType = msgType;
-    }
-
-    public int getCusto() {
-        return custo;
-    }
 
     public EstadoPiso getEstadoPiso() {
         return estadoPiso;
