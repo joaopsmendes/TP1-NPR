@@ -28,7 +28,7 @@ public class Veiculo {
             try {
 
                 Packet p = new Packet();
-                DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, ipserver, 4321);
+                DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, ipRSU, 4321);
                 socketEnviar.send(request);
 
             } catch (IOException e) {
