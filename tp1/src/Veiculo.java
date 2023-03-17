@@ -22,7 +22,7 @@ public class Veiculo {
 
     public Map<InetAddress,Packet> info = new HashMap<>();
 
-    public veiculo(InetAddress ipRSU) throws SocketException {
+    public void veiculo(InetAddress ipRSU) throws SocketException {
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
@@ -39,7 +39,7 @@ public class Veiculo {
 
                 InetAddress ipCarro = receiveP.getAddress();
 
-                info.add(ipCarro,msg);
+                info.put(ipCarro,p);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -79,6 +79,7 @@ public class Veiculo {
             }
         }).start();*/
     }
+
     
 
     

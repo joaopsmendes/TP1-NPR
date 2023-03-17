@@ -779,7 +779,7 @@ annotation a2 {
     label {Mini-cloud Local}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     color #ffffff
     width 1
     border #ff0000
@@ -793,17 +793,12 @@ annotation a3 {
     label {Mini-cloud Local}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     color #fbffff
     width 1
     border #ff0000
     rad 25
     canvas c2
-}
-
-canvas c1 {
-    name {Canvas1}
-    size {1105.0 750}
 }
 
 canvas c2 {
