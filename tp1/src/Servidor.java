@@ -46,26 +46,8 @@ public class Servidor{
 
                     InetAddress nodeAdr = receiveP.getAddress();//ip do carro de quem recebeu msg
 
-                    if (p.getMsgType() == 2) {//msg de pedir vizinhos ao RSU
-
-                        //System.out.println("sv: Nodo [ " + nodeAdr + " ] lido!");
-
-                        try {
-                            lockNodosRede.lock();
-                            nodosRede.add(nodeAdr);
-                        } finally {
-                            lockNodosRede.unlock();
-                        }
-
-                        List<InetAddress> listVizinhos = database.getNeighbours(nodeAdr);
-
-                        Packet send = new Packet(4,0, listVizinhos); //MSG tipo 4 -> Sv envia vizinhos
-
-                        DatagramPacket pResponse = new DatagramPacket(send.serialize(), send.serialize().length, nodeAdr, 4321);
-                        socketEnviar.send(pResponse);
-                        System.out.println("sv: Enviei pacote tipo 4 (vizinhos) ao nodo [ " + nodeAdr + " ]");
-
-                    } else if
                 }
             }
         }
+    }
+}
