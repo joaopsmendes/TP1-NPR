@@ -25,17 +25,13 @@ public class Servidor{
 
     private InetAddress ip;
 
-    private List<InetAddress> carros;
+
 
 
     public Servidor(InetAddress ipserver) throws IOException {
-
-
-
+        
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
-
-
 
         new Thread(() -> { 
             try {

@@ -9,21 +9,24 @@ public class Packet implements Serializable{
     private String matricula;
     private double velocidade;
     private String tipo;
-
+    private double coordX;
+    private double coordY;
     private EstadoPiso estadoPiso;
 
 
     //hoe to create enum
-    public enum EstadoPiso {
+    enum EstadoPiso {
         SECO, CHUVA, NEVE, GELO
     }
 
-    public Packet(int msgType, int custo, String matricula, double velocidade, String tipo, EstadoPiso estadoPiso) {
+    public Packet(int msgType, int custo, String matricula, double velocidade, String tipo,double coordX, double coordY, estadoPiso) {
         this.msgType = msgType;
         this.custo = custo;
         this.matricula = matricula;
         this.velocidade = velocidade;
         this.tipo = tipo;
+        this.coordX = coordX;
+        this.coordY = coordY;
         this.estadoPiso = estadoPiso;
     }
     
@@ -37,6 +40,18 @@ public class Packet implements Serializable{
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getMsgType() {
+        return msgType;
+    }
+
+    public void setMsgType(int msgType) {
+        this.msgType = msgType;
+    }
+
+    public int getCusto() {
+        return custo;
     }
 
     byte[] serialize() throws IOException {
@@ -94,4 +109,19 @@ public class Packet implements Serializable{
         this.custo = custo;
     }
 
+    public double getCoordX() {
+        return coordX;
+    }
+
+    public void setCoordX(double coordX) {
+        this.coordX = coordX;
+    }
+
+    public double getCoordY() {
+        return coordY;
+    }
+
+    public void setCoordY(double coordY) {
+        this.coordY = coordY;
+    }
 }
