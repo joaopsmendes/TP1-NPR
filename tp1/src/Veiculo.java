@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.*;
 import java.io.*;
 import java.net.*;
@@ -85,7 +86,7 @@ public class Veiculo {
                 DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
                 socketEnviar.send(request);
 
-                println("Pacote enviado a para broadcast!")
+                println("Pacote enviado a para broadcast!");
 
                 //sleep(10000);
 

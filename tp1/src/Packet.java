@@ -26,6 +26,15 @@ public class Packet implements Serializable{
         this.tipo = tipo;
         this.estadoPiso = estadoPiso;
     }
+
+    public Packet(Packet p){
+        this.msgType = p.getMsgType();
+        this.custo = p.getCusto();
+        this.matricula = p.getMatricula();
+        this.velocidade = p.getVelocidade();
+        this.tipo = p.getTipo();
+        this.estadoPiso = p.getEstadoPiso();
+    }
     
 
     public Packet(byte[] bytes) {
@@ -57,6 +66,14 @@ public class Packet implements Serializable{
     }
 
     
+
+    public int getMsgType() {
+        return msgType;
+    }
+
+    public int getCusto() {
+        return custo;
+    }
 
     public EstadoPiso getEstadoPiso() {
         return estadoPiso;
