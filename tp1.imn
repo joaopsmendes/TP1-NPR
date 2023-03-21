@@ -4,21 +4,18 @@ node n1 {
     network-config {
 	hostname n1
 	!
-	interface eth3
-	 ip address 10.0.8.1/24
-	 ipv6 address 2001:8::1/64
-	!
 	interface eth2
-	 ip address 10.0.2.1/24
 	 ipv6 address 2001:2::1/64
 	!
 	interface eth1
-	 ip address 10.0.1.1/24
 	 ipv6 address 2001:1::1/64
 	!
 	interface eth0
-	 ip address 10.0.0.1/24
 	 ipv6 address 2001:0::1/64
+	!
+	interface eth3
+	 ip address 10.0.8.1/24
+	 ipv6 address 2001:8::1/64
 	!
     }
     canvas c2
@@ -28,6 +25,41 @@ node n1 {
     interface-peer {eth1 n2}
     interface-peer {eth2 n3}
     interface-peer {eth3 n4}
+    custom-config {
+	custom-config-id service:zebra
+	custom-command zebra
+	config {
+	files=('/usr/local/etc/quagga/Quagga.conf', 'quaggaboot.sh', '/usr/local/etc/quagga/vtysh.conf', )
+	}
+    }
+    custom-config {
+	custom-config-id service:zebra:/usr/local/etc/quagga/Quagga.conf
+	custom-command /usr/local/etc/quagga/Quagga.conf
+	config {
+	interface eth0
+	  ipv6 address 2001::1/64
+	!
+	interface eth1
+	  ipv6 address 2001:1::1/64
+	!
+	interface eth2
+	  ipv6 address 2001:2::1/64
+	!
+	interface eth3
+	  ipv6 address 2001:8::1/64
+	!
+	router ospf6
+	  instance-id 0
+	  router-id 10.0.8.1
+	  interface eth0 area 0.0.0.0
+	  interface eth1 area 0.0.0.0
+	  interface eth2 area 0.0.0.0
+	  interface eth3 area 0.0.0.0
+	!
+	
+	}
+    }
+    services {OSPFv3 zebra IPForward}
 }
 
 node n2 {
@@ -36,21 +68,18 @@ node n2 {
     network-config {
 	hostname n2
 	!
-	interface eth3
-	 ip address 10.0.10.2/24
-	 ipv6 address 2001:10::2/64
-	!
 	interface eth2
-	 ip address 10.0.6.2/24
 	 ipv6 address 2001:6::2/64
 	!
 	interface eth1
-	 ip address 10.0.5.1/24
 	 ipv6 address 2001:5::1/64
 	!
 	interface eth0
-	 ip address 10.0.1.2/24
 	 ipv6 address 2001:1::2/64
+	!
+	interface eth3
+	 ip address 10.0.10.2/24
+	 ipv6 address 2001:10::2/64
 	!
     }
     canvas c2
@@ -60,6 +89,41 @@ node n2 {
     interface-peer {eth1 n5}
     interface-peer {eth2 n3}
     interface-peer {eth3 n7}
+    custom-config {
+	custom-config-id service:zebra
+	custom-command zebra
+	config {
+	files=('/usr/local/etc/quagga/Quagga.conf', 'quaggaboot.sh', '/usr/local/etc/quagga/vtysh.conf', )
+	}
+    }
+    custom-config {
+	custom-config-id service:zebra:/usr/local/etc/quagga/Quagga.conf
+	custom-command /usr/local/etc/quagga/Quagga.conf
+	config {
+	interface eth0
+	  ipv6 address 2001:1::2/64
+	!
+	interface eth1
+	  ipv6 address 2001:5::1/64
+	!
+	interface eth2
+	  ipv6 address 2001:6::2/64
+	!
+	interface eth3
+	  ipv6 address 2001:10::2/64
+	!
+	router ospf6
+	  instance-id 0
+	  router-id 10.0.10.2
+	  interface eth0 area 0.0.0.0
+	  interface eth1 area 0.0.0.0
+	  interface eth2 area 0.0.0.0
+	  interface eth3 area 0.0.0.0
+	!
+	
+	}
+    }
+    services {OSPFv3 zebra IPForward}
 }
 
 node n3 {
@@ -68,21 +132,18 @@ node n3 {
     network-config {
 	hostname n3
 	!
-	interface eth3
-	 ip address 10.0.6.1/24
-	 ipv6 address 2001:6::1/64
-	!
 	interface eth2
-	 ip address 10.0.4.1/24
 	 ipv6 address 2001:4::1/64
 	!
 	interface eth1
-	 ip address 10.0.3.1/24
 	 ipv6 address 2001:3::1/64
 	!
 	interface eth0
-	 ip address 10.0.2.2/24
 	 ipv6 address 2001:2::2/64
+	!
+	interface eth3
+	 ip address 10.0.6.1/24
+	 ipv6 address 2001:6::1/64
 	!
     }
     canvas c2
@@ -92,6 +153,41 @@ node n3 {
     interface-peer {eth1 n4}
     interface-peer {eth2 n5}
     interface-peer {eth3 n2}
+    custom-config {
+	custom-config-id service:zebra
+	custom-command zebra
+	config {
+	files=('/usr/local/etc/quagga/Quagga.conf', 'quaggaboot.sh', '/usr/local/etc/quagga/vtysh.conf', )
+	}
+    }
+    custom-config {
+	custom-config-id service:zebra:/usr/local/etc/quagga/Quagga.conf
+	custom-command /usr/local/etc/quagga/Quagga.conf
+	config {
+	interface eth0
+	  ipv6 address 2001:2::2/64
+	!
+	interface eth1
+	  ipv6 address 2001:3::1/64
+	!
+	interface eth2
+	  ipv6 address 2001:4::1/64
+	!
+	interface eth3
+	  ipv6 address 2001:6::1/64
+	!
+	router ospf6
+	  instance-id 0
+	  router-id 10.0.2.2
+	  interface eth0 area 0.0.0.0
+	  interface eth1 area 0.0.0.0
+	  interface eth2 area 0.0.0.0
+	  interface eth3 area 0.0.0.0
+	!
+	
+	}
+    }
+    services {OSPFv3 zebra IPForward}
 }
 
 node n4 {
@@ -101,15 +197,12 @@ node n4 {
 	hostname n4
 	!
 	interface eth2
-	 ip address 10.0.8.2/24
 	 ipv6 address 2001:8::2/64
 	!
 	interface eth1
-	 ip address 10.0.7.2/24
 	 ipv6 address 2001:7::2/64
 	!
 	interface eth0
-	 ip address 10.0.3.2/24
 	 ipv6 address 2001:3::2/64
 	!
     }
@@ -119,6 +212,38 @@ node n4 {
     interface-peer {eth0 n3}
     interface-peer {eth1 n5}
     interface-peer {eth2 n1}
+    custom-config {
+	custom-config-id service:zebra
+	custom-command zebra
+	config {
+	files=('/usr/local/etc/quagga/Quagga.conf', 'quaggaboot.sh', '/usr/local/etc/quagga/vtysh.conf', )
+	}
+    }
+    custom-config {
+	custom-config-id service:zebra:/usr/local/etc/quagga/Quagga.conf
+	custom-command /usr/local/etc/quagga/Quagga.conf
+	config {
+	interface eth0
+	  ipv6 address 2001:3::2/64
+	!
+	interface eth1
+	  ipv6 address 2001:7::2/64
+	!
+	interface eth2
+	  ipv6 address 2001:8::2/64
+	!
+	
+	router ospf6
+	  instance-id 0
+	  router-id 10.0.3.2
+	  interface eth0 area 0.0.0.0
+	  interface eth1 area 0.0.0.0
+	  interface eth2 area 0.0.0.0
+	!
+	
+	}
+    }
+    services {OSPFv3 zebra IPForward}
 }
 
 node n5 {
@@ -127,21 +252,18 @@ node n5 {
     network-config {
 	hostname n5
 	!
-	interface eth3
-	 ip address 10.0.11.1/24
-	 ipv6 address 2001:11::1/64
-	!
 	interface eth2
-	 ip address 10.0.7.1/24
 	 ipv6 address 2001:7::1/64
 	!
 	interface eth1
-	 ip address 10.0.5.2/24
 	 ipv6 address 2001:5::2/64
 	!
 	interface eth0
-	 ip address 10.0.4.2/24
 	 ipv6 address 2001:4::2/64
+	!
+	interface eth3
+	 ip address 10.0.11.1/24
+	 ipv6 address 2001:11::1/64
 	!
     }
     canvas c2
@@ -151,6 +273,42 @@ node n5 {
     interface-peer {eth1 n2}
     interface-peer {eth2 n4}
     interface-peer {eth3 n8}
+    custom-config {
+	custom-config-id service:zebra
+	custom-command zebra
+	config {
+	files=('/usr/local/etc/quagga/Quagga.conf', 'quaggaboot.sh', '/usr/local/etc/quagga/vtysh.conf', )
+	}
+    }
+    custom-config {
+	custom-config-id service:zebra:/usr/local/etc/quagga/Quagga.conf
+	custom-command /usr/local/etc/quagga/Quagga.conf
+	config {
+	interface eth0
+	  ipv6 address 2001:4::2/64
+	!
+	interface eth1
+	  ipv6 address 2001:5::2/64
+	!
+	interface eth2
+	  ipv6 address 2001:7::1/64
+	!
+	interface eth3
+	  ipv6 address 2001:11::1/64
+	!
+	
+	router ospf6
+	  instance-id 0
+	  router-id 10.0.4.2
+	  interface eth0 area 0.0.0.0
+	  interface eth1 area 0.0.0.0
+	  interface eth2 area 0.0.0.0
+	  interface eth3 area 0.0.0.0
+	!
+	
+	}
+    }
+    services {OSPFv3 zebra IPForward}
 }
 
 node n6 {
@@ -160,8 +318,8 @@ node n6 {
 	!
     }
     canvas c2
-    iconcoords {182.0 86.0}
-    labelcoords {182.0 110.0}
+    iconcoords {190.0 67.0}
+    labelcoords {190.0 91.0}
     interface-peer {e0 n9}
     interface-peer {e1 n1}
 }
@@ -309,8 +467,8 @@ node n9 {
 	!
     }
     canvas c2
-    iconcoords {61.0 85.0}
-    labelcoords {61.0 117.0}
+    iconcoords {65.0 124.0}
+    labelcoords {65.0 156.0}
     interface-peer {eth0 n6}
 }
 
@@ -386,6 +544,7 @@ node n14 {
 	mobmodel
 	coreapi
 	basic_range
+	ns2script
 	!
     }
     custom-config {
@@ -397,6 +556,20 @@ node n14 {
 	jitter=0
 	delay=20000
 	error=0
+	}
+    }
+    custom-config {
+	custom-config-id ns2script
+	custom-command {10 7 11 10 10 10 10 10}
+	config {
+	file=/home/joaopsmendes/Universidade/4ano/2sem/PERFIL_RNG/NPR/TP1-NPR/tp1.scen
+	refresh_ms=50
+	loop=1
+	autostart=
+	map=
+	script_start=
+	script_pause=
+	script_stop=
 	}
     }
     canvas c2
@@ -423,8 +596,8 @@ node n15 {
 	!
     }
     canvas c2
-    iconcoords {79.0 699.0}
-    labelcoords {79.0 731.0}
+    iconcoords {73.0 685.0}
+    labelcoords {73.0 717.0}
     interface-peer {eth1 n14}
     custom-config {
 	custom-config-id service:zebra
@@ -471,8 +644,8 @@ node n16 {
 	!
     }
     canvas c2
-    iconcoords {236.0 618.0}
-    labelcoords {236.0 650.0}
+    iconcoords {344.0 649.0}
+    labelcoords {344.0 681.0}
     interface-peer {eth3 n14}
     custom-config {
 	custom-config-id service:zebra
@@ -567,8 +740,8 @@ node n18 {
 	!
     }
     canvas c2
-    iconcoords {587.0 655.0}
-    labelcoords {587.0 687.0}
+    iconcoords {696.0 668.0}
+    labelcoords {696.0 700.0}
     interface-peer {eth1 n14}
     custom-config {
 	custom-config-id service:zebra
@@ -615,8 +788,8 @@ node n19 {
 	!
     }
     canvas c2
-    iconcoords {820.0 644.0}
-    labelcoords {820.0 676.0}
+    iconcoords {794.0 538.0}
+    labelcoords {794.0 570.0}
     interface-peer {eth0 n14}
     custom-config {
 	custom-config-id service:zebra
