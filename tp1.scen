@@ -25,8 +25,18 @@ $node_(19) set X_ 838.0
 $node_(19) set Y_ 661.0
 $node_(19) set Z_ 0.00
 
-$ns_ at 1.00 "$node_(15) setdest 295.0 661.0 0.0"
-$ns_ at 1.00 "$node_(16) setdest 709.0 661.0 0.0"
-$ns_ at 1.00 "$node_(19) setdest 1108.0 661.0 0.0"
-$ns_ at 1.00 "$node_(17) setdest 109.0 540.0 0.0"
-$ns_ at 1.00 "$node_(18) setdest 459.0 540.0 0.0"
+$ns_ at 1.00 "$node_(15) setdest 200.0 661.0 0.0"
+$ns_ at 1.00 "$node_(16) setdest 625.0 661.0 0.0"
+$ns_ at 1.00 "$node_(19) setdest 900.0 661.0 0.0"
+$ns_ at 1.00 "$node_(17) setdest 209.0 540.0 0.0"
+$ns_ at 1.00 "$node_(18) setdest 500.0 540.0 0.0"
+$ns_ at 5.00 "$node_(15) setdest 350.0 661.0 0.0"
+$ns_ at 8.00 "$node_(16) setdest 730.0 661.0 0.0"
+$ns_ at 7.00 "$node_(19) setdest 1000.0 661.0 0.0"
+$ns_ at 11.00 "$node_(17) setdest 105.0 540.0 0.0"
+$ns_ at 9.00 "$node_(18) setdest 375.0 540.0 0.0"
+$ns_ at 14.00 "$node_(15) setdest 538.0 661.0 0.0"
+$ns_ at 18.00 "$node_(17) setdest 70.0 540.0 0.0"
+$ns_ at 12.00 "$node_(16) setdest 800.0 661.0 0.0"
+$ns_ at 13.00 "$node_(19) setdest 1100.0 661.0 0.0"
+$ns_ at 16.00 "$node_(18) setdest 290.0 540.0 0.0"

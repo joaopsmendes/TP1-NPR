@@ -18,6 +18,9 @@ import java.io.IOException;
 
 public class Veiculo {
 
+    //o rui vai em excesso de velocidade e esta na pos xy :
+    //msg bullk, (typo msg, numero de entradas)
+
     public double x;
     public double y;
 
@@ -32,12 +35,15 @@ public class Veiculo {
         return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     }
 
-    public void veiculo(InetAddress ipRSU) throws SocketException {
+    public void veiculo(InetAddress ipRSU) throws SocketException, UnknownHostException {
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
 
         this.database = new HashMap<>();
+
+        InetAddress localHost = InetAddress.getLocalHost();
+        InetAddress ipAddress = InetAddress.getByName(localHost.getHostAddress());
 
         new Thread(() -> { // THREAD PARA receber 
             try {
@@ -98,15 +104,17 @@ public class Veiculo {
                 // create the broadcast address
                 InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
 
-                Packet p = new Packet(0, 0, 0, 0, 0, Packet.EstadoPiso.SECO);
+                for ()
+
+                Packet p = new Packet(ipAddress,x,y, Packet.EstadoPiso.SECO, Packet.Velocidade.CINQUENTA);
                 DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
                 socketEnviar.send(request);
 
                 System.out.println("Pacote enviado a para broadcast!");
 
-                if(euclideanDistance(x,y,850.0,220.0)>200){//200 metros do RSU , RSU na pos (850,220)??
+                //if(euclideanDistance(x,y,850.0,220.0)>200){//200 metros do RSU , RSU na pos (850,220)??
                     
-                }
+                //}
 
                 //sleep(10000);
 

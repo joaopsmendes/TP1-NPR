@@ -2,16 +2,14 @@ import java.io.*;
 import java.net.InetAddress;
 import java.util.List;
 
-public class Packet implements Serializable{
-
-    private int msgType;//tipo de mensagem a enviar //0
-    private int custo;
-    private String matricula;
-    private double velocidade;
-    private String tipo;
+public class Packet implements Serializable {
+    private InetAddress ip;
     private double coordX;
     private double coordY;
     private EstadoPiso estadoPiso;
+    private Velocidade velocidade;
+
+
 
 
     //hoe to create enum
@@ -19,48 +17,80 @@ public class Packet implements Serializable{
         SECO, CHUVA, NEVE, GELO
     }
 
-    public Packet(int msgType, int custo, String matricula, double velocidade, String tipo,double coordX, double coordY, estadoPiso) {
-        this.msgType = msgType;
-        this.custo = custo;
-        this.matricula = matricula;
-        this.velocidade = velocidade;
-        this.tipo = tipo;
-        this.coordX = coordX;
-        this.coordY = coordY;
-        this.estadoPiso = estadoPiso;
-    }
 
-    public Packet(Packet p){
-        this.msgType = p.getMsgType();
-        this.custo = p.getCusto();
-        this.matricula = p.getMatricula();
-        this.velocidade = p.getVelocidade();
-        this.tipo = p.getTipo();
-        this.estadoPiso = p.getEstadoPiso();
-    }
-    
+    public enum Velocidade {
+        TRINTA(30),
+        CINQUENTA(50),
+        NOVENTA(90),
+        CENTO_VINTE(120);
 
-    public Packet(byte[] bytes) {
+        private final int valor;
 
-        try {
-            Packet msg = deserialize(bytes);
-            this.custo = msg.getCusto();
-            this.msgType = msg.getMsgType();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        Velocidade(int valor) {
+            this.valor = valor;
+        }
+
+        public int getValor() {
+            return valor;
         }
     }
 
-    public int getMsgType() {
-        return msgType;
+    public Packet(InetAddress ip, double coordX, double coordY, EstadoPiso estadoPiso, Velocidade velocidade) {
+        this.ip = ip;
+        this.coordX = coordX;
+        this.coordY = coordY;
+        this.estadoPiso = estadoPiso;
+        this.velocidade = velocidade;
     }
 
-    public void setMsgType(int msgType) {
-        this.msgType = msgType;
+    public Packet( Packet p){
+        this.ip = p.getIp();
+        this.coordY = p.getCoordY();
+        this.coordX = p.getCoordX();
+        this.estadoPiso = p.getEstadoPiso();
+        this.velocidade = p.getVelocidade();
     }
 
-    public int getCusto() {
-        return custo;
+
+
+    public InetAddress getIp() {
+        return ip;
+    }
+
+    public void setIp(InetAddress ip) {
+        this.ip = ip;
+    }
+
+    public double getCoordX() {
+        return coordX;
+    }
+
+    public void setCoordX(double coordX) {
+        this.coordX = coordX;
+    }
+
+    public double getCoordY() {
+        return coordY;
+    }
+
+    public void setCoordY(double coordY) {
+        this.coordY = coordY;
+    }
+
+    public EstadoPiso getEstadoPiso() {
+        return estadoPiso;
+    }
+
+    public void setEstadoPiso(EstadoPiso estadoPiso) {
+        this.estadoPiso = estadoPiso;
+    }
+
+    public Velocidade getVelocidade() {
+        return velocidade;
+    }
+
+    public void setVelocidade(Velocidade velocidade) {
+        this.velocidade = velocidade;
     }
 
     byte[] serialize() throws IOException {
@@ -80,65 +110,5 @@ public class Packet implements Serializable{
         return messageClass;
     }
 
-    
 
-    public int getMsgType() {
-        return msgType;
-    }
-
-    public int getCusto() {
-        return custo;
-    }
-
-    public EstadoPiso getEstadoPiso() {
-        return estadoPiso;
-    }
-
-    public void setEstadoPiso(EstadoPiso estadoPiso) {
-        this.estadoPiso = estadoPiso;
-    }
-
-    public String getMatricula() {
-        return matricula;
-    }
-
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
-    }
-
-    public double getVelocidade() {
-        return velocidade;
-    }
-
-    public void setVelocidade(double velocidade) {
-        this.velocidade = velocidade;
-    }
-
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
-
-    public void setCusto(int custo) {
-        this.custo = custo;
-    }
-
-    public double getCoordX() {
-        return coordX;
-    }
-
-    public void setCoordX(double coordX) {
-        this.coordX = coordX;
-    }
-
-    public double getCoordY() {
-        return coordY;
-    }
-
-    public void setCoordY(double coordY) {
-        this.coordY = coordY;
-    }
 }
