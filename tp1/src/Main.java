@@ -5,19 +5,21 @@ public class Main {
     public static void main(String[] args) throws IOException {
 
         if (args.length < 2) {
-            System.out.println("syntax: java Main ...");
+            System.out.println("syntax: javac Main ...");
             return;
         }
 
-        String ipRSU = args[1];
+        String ip = args[1];
 
-        if (args[0].equals("S")) {
+        if (args[0].equals("V")) {
 
-            Servidor s = new Servidor(InetAddress.getByName(ipRSU));
+            Veiculo v = new Veiculo(InetAddress.getByName(ip));
 
-        } else if (args[0].equals("V")) {
 
-            Veiculo v = new Cliente(InetAddress.getByName(ipRSU));
+
+
+        }else if(args[0].equals("RSU")){
+            RSU rsu = new RSU(InetAddress.getByName(ip));
 
         }
     }

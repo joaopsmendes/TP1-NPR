@@ -1,8 +1,12 @@
 import java.io.*;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Random;
 
 public class Packet implements Serializable {
+
+    private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
+    //int -> nº pacotes
     private InetAddress ip;
     private double coordX;
     private double coordY;
@@ -10,7 +14,19 @@ public class Packet implements Serializable {
     private Velocidade velocidade;
 
 
+    private static final Random rand = new Random();
 
+    public static Velocidade getRandomVelocidade() {
+        Velocidade[] allVelocidades = Velocidade.values();
+        int randomIndex = rand.nextInt(allVelocidades.length);
+        return allVelocidades[randomIndex];
+    }
+
+    public static EstadoPiso getRandomEstadoPiso() {
+        EstadoPiso[] allEstados = EstadoPiso.values();
+        int randomIndex = rand.nextInt(allEstados.length);
+        return allEstados[randomIndex];
+    }
 
     //hoe to create enum
     enum EstadoPiso {
@@ -35,7 +51,8 @@ public class Packet implements Serializable {
         }
     }
 
-    public Packet(InetAddress ip, double coordX, double coordY, EstadoPiso estadoPiso, Velocidade velocidade) {
+    public Packet(Integer type, InetAddress ip, double coordX, double coordY, EstadoPiso estadoPiso, Velocidade velocidade) {
+        this.msgType = type;
         this.ip = ip;
         this.coordX = coordX;
         this.coordY = coordY;
@@ -44,6 +61,7 @@ public class Packet implements Serializable {
     }
 
     public Packet( Packet p){
+        this.msgType = p.getMsgType();
         this.ip = p.getIp();
         this.coordY = p.getCoordY();
         this.coordX = p.getCoordX();
@@ -52,6 +70,13 @@ public class Packet implements Serializable {
     }
 
 
+    public Integer getMsgType() {
+        return msgType;
+    }
+
+    public void setMsgType(Integer msgType) {
+        this.msgType = msgType;
+    }
 
     public InetAddress getIp() {
         return ip;

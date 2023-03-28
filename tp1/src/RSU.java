@@ -39,29 +39,61 @@ public class RSU{
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
+                    System.out.println("RSU ON!");
 
-                    byte[] msg = new byte[1024];
-                    DatagramPacket receiveP = new DatagramPacket(msg, msg.length);
-                    socketReceber.receive(receiveP);
+                    Packet[] pacotesRecebidos = PacketTransmission.receivePackets(socketReceber);
 
-                    msg = receiveP.getData();
-                    Packet p = new Packet(msg);
+                    System.out.println("Pacotes recebidos!");
 
-                    InetAddress ipCarro = receiveP.getAddress();
+                    assert pacotesRecebidos != null;
+                    int i=1;
+                    for(Packet p : pacotesRecebidos){
 
-                    //DATABASE - adicionar novo carro / nova msg!
+                        System.out.println("Pacote" + i + ":"+ p.getIp().toString());
+                        i++;
 
-                    if (databaseRSU.containsKey(ipCarro)) {
-                        databaseRSU.get(ipCarro).add(p);
-                    } else {
-                        ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                        listCarMsgs.add(p);
-                        databaseRSU.put(ipCarro, listCarMsgs);
+                        if (databaseRSU.containsKey(p.getIp())) {
+                            databaseRSU.get(p.getIp()).add(p);
+                        } else {
+                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
+                            listCarMsgs.add(p);
+                            databaseRSU.put(p.getIp(), listCarMsgs);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        /*new Thread(() -> { // THREAD PARA ENVIAR! para o server!
+            try {
+                while (true) {
+
+                    if(!databaseRSU.isEmpty()){//databse not empty
+
+                        List<Packet> Lpacotes = new ArrayList<>();
+                        for (ArrayList<Packet> Plist : databaseRSU.values()){
+                            Lpacotes.add(Plist.get(Plist.size()-1));//last added???
+                        }
+
+                        Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
+                        //tipo 2
+                        DatagramPacket data = PacketTransmission.sendPackets(ipserver,4321,pacotes);
+                        socketEnviar.send(data);
+
+                        System.out.println("Pacote tipo 2 enviado a para o server!");
+
+                    }else{
+
+                        System.out.println("RSU não tem dados!");
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }).start();
+        }).start();*/
     }
 }
