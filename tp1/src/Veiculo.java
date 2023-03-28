@@ -86,27 +86,31 @@ public class Veiculo {
 
         new Thread(() -> { // THREAD PARA receber
             try {
-                while (!Thread.interrupted()) {
+                while (true) {
                     System.out.println("Veiculo " + ipAddress + " ON!\n");
 
-                    byte[] buffer = new byte[65507]; // Max size of a UDP packet
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    byte[] bufferr = new byte[2048]; // Max size of a UDP packet
+                    DatagramPacket packetRecebido = new DatagramPacket(bufferr, bufferr.length);
 
                     // Non-blocking call to receive packet
-                    socketReceber.setSoTimeout(1000); // Timeout set to 1 second
-                    try {
-                        socketReceber.receive(packet);
-                    } catch (SocketTimeoutException e) {
+                    //socketReceber.setSoTimeout(1000); // Timeout set to 1 second
+                    //try {
+                    socketReceber.receive(packetRecebido);
+                    //} catch (SocketTimeoutException e) {
                         // No packets received within timeout period, continue loop
-                        continue;
-                    }
+                        //continue;
+                    //}
+
+                    System.out.println("depois de: socketReceber.receive(packet)");
+
+                    ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr);
+                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
+                    int msgtype = objectStream.readInt();
 
                     System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
 
                     // Process received packet
-                    ByteArrayInputStream byteStream = new ByteArrayInputStream(buffer);
-                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
-                    int msgtype = objectStream.readInt();
+
 
                     if (msgtype == 2) { //bulk
                         int numPackets = objectStream.readInt(); // read the number of packets being received
@@ -141,73 +145,78 @@ public class Veiculo {
                     }
 
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
+                System.out.println("depois de : catch (ClassNotFoundException | IOException ignored)");
                 e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+
             }
         }).start();
 
         new Thread(() -> { // enviar msg period -> broadcast
             try {
+                while(true) {
 
-                //ler ficheiro e tirar coords
-                //ler primeiros 3 chars da diretoria atual
-                Path currentPath = Paths.get("").toAbsolutePath();
-                Path targetPath = currentPath.getParent().getParent().getParent();
-                String directoryName = targetPath.getFileName().toString();
-                String directoryPrefix = directoryName.substring(0, Math.min(directoryName.length(), 3));
+                    //ler ficheiro e tirar coords
+                    //ler primeiros 3 chars da diretoria atual
+                    Path currentPath = Paths.get("").toAbsolutePath();
+                    Path targetPath = currentPath.getParent().getParent().getParent();
+                    String directoryName = targetPath.getFileName().toString();
+                    String directoryPrefix = directoryName.substring(0, Math.min(directoryName.length(), 3));
 
-                // Read the file with the prefix in the parent directory
-                // Read the coordinates from the file
-                Path filePath = targetPath.getParent().resolve(directoryPrefix + ".xy");
-                try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
-                    String line = reader.readLine();
-                    String[] tokens = line.split(" ");
+                    // Read the file with the prefix in the parent directory
+                    // Read the coordinates from the file
+                    Path filePath = targetPath.getParent().resolve(directoryPrefix + ".xy");
+                    try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
+                        String line = reader.readLine();
+                        String[] tokens = line.split(" ");
 
-                    x = Double.parseDouble(tokens[0]);
-                    y = Double.parseDouble(tokens[1]);
+                        x = Double.parseDouble(tokens[0]);
+                        y = Double.parseDouble(tokens[1]);
 
-                    System.out.println("Ficheiro " + directoryPrefix + "Lido! ("+x+" , "+y+")");
+                        System.out.println("Ficheiro " + directoryPrefix + ".xy Lido! (" + x + " , " + y + ")");
 
-                } catch (IOException e) {
-                    // Handle the exception
-                }
-
-
-                // create the broadcast address
-                socketEnviar.setBroadcast(true);
-                InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
-
-
-                if(!database.isEmpty()){//databse not empty
-
-                    List<Packet> Lpacotes = new ArrayList<>();
-                    for (ArrayList<Packet> Plist : database.values()){
-                        Lpacotes.add(Plist.get(Plist.size()-1));//last added???
+                    } catch (IOException e) {
+                        // Handle the exception
                     }
 
-                    //adicionar o proprio
-                    Lpacotes.add(new Packet(1,ipAddress,x,y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
-                    Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
-                    //tipo 2
-                    DatagramPacket data = sendPackets(broadcastAddr,4321,pacotes);
-                    socketEnviar.send(data);
 
-                    System.out.println("Pacote tipo 2 enviado a para broadcast!");
+                    // create the broadcast address
+                    socketEnviar.setBroadcast(true);
+                    InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
 
-                }else{
-                    //tipo 1 (info normnal)
-                    Packet p = new Packet(1,ipAddress,x,y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
-                    DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
-                    socketEnviar.send(request);
 
-                    System.out.println("Pacote tipo 1 enviado a para broadcast!");
+                    if (!database.isEmpty()) {//databse not empty
 
+                        List<Packet> Lpacotes = new ArrayList<>();
+                        for (ArrayList<Packet> Plist : database.values()) {
+                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
+                        }
+
+                        //adicionar o proprio
+                        Lpacotes.add(new Packet(1, ipAddress, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
+                        Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
+                        //tipo 2
+                        DatagramPacket data = sendPackets(broadcastAddr, 4321, pacotes);
+                        socketEnviar.send(data);
+
+                        System.out.println("Pacote tipo 2 enviado a para broadcast!");
+
+                    } else {
+                        //tipo 1 (info normnal)
+                        Packet p = new Packet(1, ipAddress, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
+                        DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
+                        socketEnviar.send(request);
+
+                        System.out.println("Pacote tipo 1 enviado a para broadcast!");
+
+                    }
+                    Thread.sleep(1000);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
     }

@@ -36,7 +36,7 @@ public class RSU{
 
         this.databaseRSU = new HashMap<>();
 
-        new Thread(() -> { // THREAD PARA receber
+        /*new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
                     System.out.println("RSU ON!");
@@ -64,6 +64,68 @@ public class RSU{
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();*/
+
+        new Thread(() -> { // THREAD PARA receber
+            try {
+                while (!Thread.interrupted()) {
+                    System.out.println("RSU ON!\n");
+
+                    byte[] buffer = new byte[65507]; // Max size of a UDP packet
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+                    // Non-blocking call to receive packet
+                    socketReceber.setSoTimeout(1000); // Timeout set to 1 second
+                    try {
+                        socketReceber.receive(packet);
+                    } catch (SocketTimeoutException e) {
+                        // No packets received within timeout period, continue loop
+                        continue;
+                    }
+
+                    //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
+
+                    // Process received packet
+                    ByteArrayInputStream byteStream = new ByteArrayInputStream(buffer);
+                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
+                    int msgtype = objectStream.readInt();
+
+                    if (msgtype == 2) { //bulk
+                        int numPackets = objectStream.readInt(); // read the number of packets being received
+                        Packet[] packets1 = new Packet[numPackets];
+                        for (int i = 0; i < numPackets; i++) {
+                            packets1[i] = (Packet) objectStream.readObject(); // read each packet from the stream
+                        }
+                        for (Packet p : packets1) {
+                            if (databaseRSU.containsKey(p.getIp())) {
+                                databaseRSU.get(p.getIp()).add(p);
+                            } else {
+                                ArrayList<Packet> listCarMsgs = new ArrayList<>();
+                                listCarMsgs.add(p);
+                                databaseRSU.put(p.getIp(), listCarMsgs);
+                            }
+                        }
+
+                        // Handle received packets as needed
+                    } else if (msgtype == 1) { //1 packet
+                        Packet[] packets1 = new Packet[1];
+                        packets1[0] = (Packet) objectStream.readObject();
+
+                        if (databaseRSU.containsKey(packets1[0].getIp())) {
+                            databaseRSU.get(packets1[0].getIp()).add(packets1[0]);
+                        } else {
+                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
+                            listCarMsgs.add(packets1[0]);
+                            databaseRSU.put(packets1[0].getIp(), listCarMsgs);
+                        }
+                    } else {//outros tipos.....
+                        System.out.println("<<pacote invalido!>>");
+                    }
+
+                }
+            } catch (ClassNotFoundException | IOException e) {
                 throw new RuntimeException(e);
             }
         }).start();
