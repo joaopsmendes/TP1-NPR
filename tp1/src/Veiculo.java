@@ -1,21 +1,11 @@
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.Timer;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.List;
 
 public class Veiculo {
@@ -30,12 +20,6 @@ public class Veiculo {
     private DatagramSocket socketReceber;
 
     public Map<String, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added! (numero do nodo?)
-
-    public static double euclideanDistance(double x1, double y1, double x2, double y2) {
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-    }
 
     public Veiculo(InetAddress ipAddress) throws SocketException, UnknownHostException {
 
@@ -146,7 +130,7 @@ public class Veiculo {
                         Lpacotes.add(new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
                         Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
                         //tipo 2
-                        DatagramPacket data = Packet.sendPackets(broadcastAddr, 4321, pacotes);
+                        DatagramPacket data = Utils.sendPackets(broadcastAddr, 4321, pacotes);
                         socketEnviar.send(data);
 
                         System.out.println("Pacote tipo 2 enviado a para broadcast!");
@@ -154,13 +138,13 @@ public class Veiculo {
                     } else {
                         //tipo 1 (info normnal)
                         Packet p = new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
-                        DatagramPacket request = Packet.sendPacket(broadcastAddr, 4321, p);
+                        DatagramPacket request = Utils.sendPacket(broadcastAddr, 4321, p);
                         socketEnviar.send(request);
 
                         System.out.println("Pacote tipo 1 enviado a para broadcast!");
 
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(10000);
                 }
 
             } catch (IOException e) {

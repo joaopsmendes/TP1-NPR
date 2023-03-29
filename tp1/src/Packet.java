@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.util.List;
 import java.util.Random;
 
 public class Packet implements Serializable {
@@ -136,31 +135,6 @@ public class Packet implements Serializable {
         return messageClass;
     }
 
-    public static DatagramPacket sendPackets(InetAddress address, int port, Packet[] packets) throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-        objectStream.writeInt(2);//info bulk
-        objectStream.writeInt(packets.length); // write the number of packets being sent as the second int
-        for (Packet packet : packets) {
-            objectStream.writeObject(packet); // write each packet to the stream
-        }
-        objectStream.flush();
-        byte[] data = byteStream.toByteArray();
-        //socket.send(packet);
-        return new DatagramPacket(data, data.length, address, port);
-    }
-    public static DatagramPacket sendPacket(InetAddress address, int port, Packet packet) throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-        objectStream.writeInt(2);//info bulk
-        objectStream.writeInt(1); // write the number of packets being sent as the second int
 
-        objectStream.writeObject(packet); // write each packet to the stream
-
-        objectStream.flush();
-        byte[] data = byteStream.toByteArray();
-        //socket.send(packet);
-        return new DatagramPacket(data, data.length, address, port);
-    }
 
 }
