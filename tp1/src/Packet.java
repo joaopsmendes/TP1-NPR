@@ -1,13 +1,14 @@
 import java.io.*;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Random;
 
 public class Packet implements Serializable {
 
-    private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
+    //private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
     //int -> nº pacotes
-    private InetAddress ip;
+    private String ip;
     private double coordX;
     private double coordY;
     private EstadoPiso estadoPiso;
@@ -51,8 +52,8 @@ public class Packet implements Serializable {
         }
     }
 
-    public Packet(Integer type, InetAddress ip, double coordX, double coordY, EstadoPiso estadoPiso, Velocidade velocidade) {
-        this.msgType = type;
+    public Packet(String ip, double coordX, double coordY, EstadoPiso estadoPiso, Velocidade velocidade) {
+        //this.msgType = type;
         this.ip = ip;
         this.coordX = coordX;
         this.coordY = coordY;
@@ -61,7 +62,7 @@ public class Packet implements Serializable {
     }
 
     public Packet( Packet p){
-        this.msgType = p.getMsgType();
+        //this.msgType = p.getMsgType();
         this.ip = p.getIp();
         this.coordY = p.getCoordY();
         this.coordX = p.getCoordX();
@@ -70,19 +71,19 @@ public class Packet implements Serializable {
     }
 
 
-    public Integer getMsgType() {
+    /*public Integer getMsgType() {
         return msgType;
     }
 
     public void setMsgType(Integer msgType) {
         this.msgType = msgType;
-    }
+    }*/
 
-    public InetAddress getIp() {
+    public String getIp() {
         return ip;
     }
 
-    public void setIp(InetAddress ip) {
+    public void setIp(String ip) {
         this.ip = ip;
     }
 
@@ -135,5 +136,31 @@ public class Packet implements Serializable {
         return messageClass;
     }
 
+    public static DatagramPacket sendPackets(InetAddress address, int port, Packet[] packets) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
+        objectStream.writeInt(2);//info bulk
+        objectStream.writeInt(packets.length); // write the number of packets being sent as the second int
+        for (Packet packet : packets) {
+            objectStream.writeObject(packet); // write each packet to the stream
+        }
+        objectStream.flush();
+        byte[] data = byteStream.toByteArray();
+        //socket.send(packet);
+        return new DatagramPacket(data, data.length, address, port);
+    }
+    public static DatagramPacket sendPacket(InetAddress address, int port, Packet packet) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
+        objectStream.writeInt(2);//info bulk
+        objectStream.writeInt(1); // write the number of packets being sent as the second int
+
+        objectStream.writeObject(packet); // write each packet to the stream
+
+        objectStream.flush();
+        byte[] data = byteStream.toByteArray();
+        //socket.send(packet);
+        return new DatagramPacket(data, data.length, address, port);
+    }
 
 }

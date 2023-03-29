@@ -5,6 +5,8 @@ import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
@@ -26,7 +28,7 @@ public class RSU{
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
-    public Map<InetAddress, ArrayList<Packet>> databaseRSU;
+    public Map<String, ArrayList<Packet>> databaseRSU;
 
 
     public RSU(InetAddress ipserver) throws IOException {
@@ -36,61 +38,33 @@ public class RSU{
 
         this.databaseRSU = new HashMap<>();
 
-        /*new Thread(() -> { // THREAD PARA receber
+        new Thread(() -> {
             try {
-                while (true) {
-                    System.out.println("RSU ON!");
-
-                    Packet[] pacotesRecebidos = PacketTransmission.receivePackets(socketReceber);
-
-                    System.out.println("Pacotes recebidos!");
-
-                    assert pacotesRecebidos != null;
-                    int i=1;
-                    for(Packet p : pacotesRecebidos){
-
-                        System.out.println("Pacote" + i + ":"+ p.getIp().toString());
-                        i++;
-
-                        if (databaseRSU.containsKey(p.getIp())) {
-                            databaseRSU.get(p.getIp()).add(p);
-                        } else {
-                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                            listCarMsgs.add(p);
-                            databaseRSU.put(p.getIp(), listCarMsgs);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();*/
+                Thread.sleep(10000);
+                for (Map.Entry<String, ArrayList<Packet>> entry : databaseRSU.entrySet()) {
+                    System.out.println(">" + entry.getKey() + " : Recent Info: " + packetToString(entry.getValue().get(databaseRSU.size() - 1)));}
+                    //System.out.println("RSU ON!");
+            } catch (InterruptedException e) {throw new RuntimeException(e);}
+        }).start();
 
         new Thread(() -> { // THREAD PARA receber
             try {
-                while (!Thread.interrupted()) {
-                    System.out.println("RSU ON!\n");
+                while (true) {
+                    //System.out.println("Veiculo " + ipAddress + " ON!\n");
 
-                    byte[] buffer = new byte[65507]; // Max size of a UDP packet
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    byte[] bufferr = new byte[2048]; // Max size of a UDP packet
+                    DatagramPacket packetRecebido = new DatagramPacket(bufferr, bufferr.length);
 
-                    // Non-blocking call to receive packet
-                    socketReceber.setSoTimeout(1000); // Timeout set to 1 second
-                    try {
-                        socketReceber.receive(packet);
-                    } catch (SocketTimeoutException e) {
-                        // No packets received within timeout period, continue loop
-                        continue;
-                    }
+                    socketReceber.receive(packetRecebido);
+
+                    System.out.println("Packet recebido de: "+ packetRecebido.getAddress());
+
+                    ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr);
+                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
+                    int msgtype = objectStream.readInt();
 
                     //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
 
-                    // Process received packet
-                    ByteArrayInputStream byteStream = new ByteArrayInputStream(buffer);
-                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
-                    int msgtype = objectStream.readInt();
 
                     if (msgtype == 2) { //bulk
                         int numPackets = objectStream.readInt(); // read the number of packets being received
@@ -98,7 +72,9 @@ public class RSU{
                         for (int i = 0; i < numPackets; i++) {
                             packets1[i] = (Packet) objectStream.readObject(); // read each packet from the stream
                         }
+                        int i=1;//print packet
                         for (Packet p : packets1) {
+
                             if (databaseRSU.containsKey(p.getIp())) {
                                 databaseRSU.get(p.getIp()).add(p);
                             } else {
@@ -106,56 +82,62 @@ public class RSU{
                                 listCarMsgs.add(p);
                                 databaseRSU.put(p.getIp(), listCarMsgs);
                             }
-                        }
-
-                        // Handle received packets as needed
-                    } else if (msgtype == 1) { //1 packet
-                        Packet[] packets1 = new Packet[1];
-                        packets1[0] = (Packet) objectStream.readObject();
-
-                        if (databaseRSU.containsKey(packets1[0].getIp())) {
-                            databaseRSU.get(packets1[0].getIp()).add(packets1[0]);
-                        } else {
-                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                            listCarMsgs.add(packets1[0]);
-                            databaseRSU.put(packets1[0].getIp(), listCarMsgs);
+                            System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à DatabaseRSU!");
                         }
                     } else {//outros tipos.....
                         System.out.println("<<pacote invalido!>>");
                     }
-
                 }
-            } catch (ClassNotFoundException | IOException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                //System.out.println("depois de ");
+                e.printStackTrace();
             }
         }).start();
 
-        /*new Thread(() -> { // THREAD PARA ENVIAR! para o server!
+        /*new Thread(() -> { // enviar msg period -> broadcast
             try {
-                while (true) {
+                while(true) {
 
-                    if(!databaseRSU.isEmpty()){//databse not empty
+                    // create the broadcast address
+                    socketEnviar.setBroadcast(true);
+                    InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
+
+                    if (!databaseRSU.isEmpty()) {//databse not empty
 
                         List<Packet> Lpacotes = new ArrayList<>();
-                        for (ArrayList<Packet> Plist : databaseRSU.values()){
-                            Lpacotes.add(Plist.get(Plist.size()-1));//last added???
+                        for (ArrayList<Packet> Plist : databaseRSU.values()) {
+                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
                         }
 
+                        //adicionar o proprio
+                        Lpacotes.add(new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
                         Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
                         //tipo 2
-                        DatagramPacket data = PacketTransmission.sendPackets(ipserver,4321,pacotes);
+                        DatagramPacket data = Packet.sendPackets(broadcastAddr, 4321, pacotes);
                         socketEnviar.send(data);
 
-                        System.out.println("Pacote tipo 2 enviado a para o server!");
+                        System.out.println("Pacote tipo 2 enviado a para broadcast!");
 
-                    }else{
+                    } else {
+                        //tipo 1 (info normnal)
+                        Packet p = new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
+                        DatagramPacket request = Packet.sendPacket(broadcastAddr, 4321, p);
+                        socketEnviar.send(request);
 
-                        System.out.println("RSU não tem dados!");
+                        System.out.println("Pacote tipo 1 enviado a para broadcast!");
+
                     }
+                    Thread.sleep(1000);
                 }
+
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();*/
+    }
+    public String packetToString(Packet p){
+        return "Packet: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]";
     }
 }

@@ -29,7 +29,7 @@ public class Veiculo {
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
-    public Map<InetAddress, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added!
+    public Map<String, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added! (numero do nodo?)
 
     public static double euclideanDistance(double x1, double y1, double x2, double y2) {
         double dx = x2 - x1;
@@ -44,72 +44,23 @@ public class Veiculo {
 
         this.database = new HashMap<>();
 
-
-
-        /*new Thread(() -> { // THREAD PARA receber
-            try {
-
-                while (!Thread.interrupted()) {
-
-                    System.out.println("Veiculo " + ipAddress + " ON!\n");
-
-                    if (socketReceber.isClosed()) {
-                        break;
-                    }
-                    Packet[] pacotesRecebidos = PacketTransmission.receivePackets(socketReceber);
-
-                    System.out.println("Veiculo " + ipAddress + " recebeu pacotes!");
-
-                    if (pacotesRecebidos != null) {
-                        for(Packet p : pacotesRecebidos){
-
-                            if (database.containsKey(p.getIp())) {
-                                database.get(p.getIp()).add(p);
-                            } else {
-                                ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                                listCarMsgs.add(p);
-                                database.put(p.getIp(), listCarMsgs);
-                            }
-                        }
-                    } else {
-                        System.out.println("<<pacote invalido!>>");
-
-                        //Thread.sleep(100);
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();*/
-
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
-                    System.out.println("Veiculo " + ipAddress + " ON!\n");
+                    //System.out.println("Veiculo " + ipAddress + " ON!\n");
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
                     DatagramPacket packetRecebido = new DatagramPacket(bufferr, bufferr.length);
 
-                    // Non-blocking call to receive packet
-                    //socketReceber.setSoTimeout(1000); // Timeout set to 1 second
-                    //try {
                     socketReceber.receive(packetRecebido);
-                    //} catch (SocketTimeoutException e) {
-                        // No packets received within timeout period, continue loop
-                        //continue;
-                    //}
 
-                    System.out.println("depois de: socketReceber.receive(packet)");
+                    System.out.println("Packet recebido de: "+ packetRecebido.getAddress());
 
                     ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr);
                     ObjectInputStream objectStream = new ObjectInputStream(byteStream);
                     int msgtype = objectStream.readInt();
 
-                    System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
-
-                    // Process received packet
+                    //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
 
 
                     if (msgtype == 2) { //bulk
@@ -118,7 +69,9 @@ public class Veiculo {
                         for (int i = 0; i < numPackets; i++) {
                             packets1[i] = (Packet) objectStream.readObject(); // read each packet from the stream
                         }
+                        int i=1;//print packet
                         for (Packet p : packets1) {
+
                             if (database.containsKey(p.getIp())) {
                                 database.get(p.getIp()).add(p);
                             } else {
@@ -126,10 +79,11 @@ public class Veiculo {
                                 listCarMsgs.add(p);
                                 database.put(p.getIp(), listCarMsgs);
                             }
+                            System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à Database!");
                         }
 
                         // Handle received packets as needed
-                    } else if (msgtype == 1) { //1 packet
+                    } else if (msgtype == 1) { //1 packet -> NÃO SE USA?
                         Packet[] packets1 = new Packet[1];
                         packets1[0] = (Packet) objectStream.readObject();
 
@@ -143,12 +97,10 @@ public class Veiculo {
                     } else {//outros tipos.....
                         System.out.println("<<pacote invalido!>>");
                     }
-
                 }
             } catch (Exception e) {
-                System.out.println("depois de : catch (ClassNotFoundException | IOException ignored)");
+                //System.out.println("depois de ");
                 e.printStackTrace();
-
             }
         }).start();
 
@@ -161,11 +113,11 @@ public class Veiculo {
                     Path currentPath = Paths.get("").toAbsolutePath();
                     Path targetPath = currentPath.getParent().getParent().getParent();
                     String directoryName = targetPath.getFileName().toString();
-                    String directoryPrefix = directoryName.substring(0, Math.min(directoryName.length(), 3));
+                    String vehicleID = directoryName.substring(0, Math.min(directoryName.length(), 3));
 
                     // Read the file with the prefix in the parent directory
                     // Read the coordinates from the file
-                    Path filePath = targetPath.getParent().resolve(directoryPrefix + ".xy");
+                    Path filePath = targetPath.getParent().resolve(vehicleID + ".xy");
                     try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
                         String line = reader.readLine();
                         String[] tokens = line.split(" ");
@@ -173,17 +125,15 @@ public class Veiculo {
                         x = Double.parseDouble(tokens[0]);
                         y = Double.parseDouble(tokens[1]);
 
-                        System.out.println("Ficheiro " + directoryPrefix + ".xy Lido! (" + x + " , " + y + ")");
+                        System.out.println("Ficheiro " + vehicleID + ".xy Lido! (" + x + " , " + y + ")");
 
                     } catch (IOException e) {
-                        // Handle the exception
+                        System.out.println("ERRO: ficheiro .xy não foi lido!");
                     }
-
 
                     // create the broadcast address
                     socketEnviar.setBroadcast(true);
                     InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
-
 
                     if (!database.isEmpty()) {//databse not empty
 
@@ -193,18 +143,18 @@ public class Veiculo {
                         }
 
                         //adicionar o proprio
-                        Lpacotes.add(new Packet(1, ipAddress, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
+                        Lpacotes.add(new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
                         Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
                         //tipo 2
-                        DatagramPacket data = sendPackets(broadcastAddr, 4321, pacotes);
+                        DatagramPacket data = Packet.sendPackets(broadcastAddr, 4321, pacotes);
                         socketEnviar.send(data);
 
                         System.out.println("Pacote tipo 2 enviado a para broadcast!");
 
                     } else {
                         //tipo 1 (info normnal)
-                        Packet p = new Packet(1, ipAddress, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
-                        DatagramPacket request = new DatagramPacket(p.serialize(), p.serialize().length, broadcastAddr, 4321);
+                        Packet p = new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
+                        DatagramPacket request = Packet.sendPacket(broadcastAddr, 4321, p);
                         socketEnviar.send(request);
 
                         System.out.println("Pacote tipo 1 enviado a para broadcast!");
@@ -220,17 +170,5 @@ public class Veiculo {
             }
         }).start();
     }
-    public static DatagramPacket sendPackets(InetAddress address, int port, Packet[] packets) throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-        objectStream.writeInt(2);//info bulk
-        objectStream.writeInt(packets.length); // write the number of packets being sent as the second int
-        for (Packet packet : packets) {
-            objectStream.writeObject(packet); // write each packet to the stream
-        }
-        objectStream.flush();
-        byte[] data = byteStream.toByteArray();
-        //socket.send(packet);
-        return new DatagramPacket(data, data.length, address, port);
-    }
+
 }
