@@ -40,7 +40,7 @@ public class Veiculo {
 
                     System.out.println("Packet recebido de: "+ packetRecebido.getAddress());
 
-                    ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr);
+                    ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr); //será que se pode enviar apenas isto?? e tirar as variaveis com objectStream.read() ??
                     ObjectInputStream objectStream = new ObjectInputStream(byteStream);
                     int msgtype = objectStream.readInt();
 
