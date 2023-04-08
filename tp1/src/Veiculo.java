@@ -21,7 +21,11 @@ public class Veiculo {
 
     public Map<String, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added! (numero do nodo?)
 
-    public Veiculo(InetAddress ipAddress) throws SocketException, UnknownHostException {
+
+
+    public Veiculo() throws SocketException, UnknownHostException {
+
+
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
@@ -34,19 +38,37 @@ public class Veiculo {
                     //System.out.println("Veiculo " + ipAddress + " ON!\n");
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
-                    DatagramPacket packetRecebido = new DatagramPacket(bufferr, bufferr.length);
+                    DatagramPacket arrayRecebido = new DatagramPacket(bufferr, bufferr.length);
 
-                    socketReceber.receive(packetRecebido);
+                    socketReceber.receive(arrayRecebido);
 
-                    System.out.println("Packet recebido de: "+ packetRecebido.getAddress());
+                    System.out.println("Packet recebido de: "+ arrayRecebido.getAddress());
 
-                    ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr); //será que se pode enviar apenas isto?? e tirar as variaveis com objectStream.read() ??
-                    ObjectInputStream objectStream = new ObjectInputStream(byteStream);
-                    int msgtype = objectStream.readInt();
+                    //ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr); //será que se pode enviar apenas isto?? e tirar as variaveis com objectStream.read() ??
+                    //ObjectInputStream objectStream = new ObjectInputStream(byteStream);
+                    //int msgtype = objectStream.readInt();
+
+                    List<Packet> packetsRecebidos = Packet.extractPackets(arrayRecebido.getData());
+
+                    int i=1;//print packet
+                    for (Packet p : packetsRecebidos) {
+
+                        if (database.containsKey(p.getIp())) {
+                            database.get(p.getIp()).add(p);
+                        } else {
+                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
+                            listCarMsgs.add(p);
+                            database.put(p.getIp(), listCarMsgs);
+                        }
+                        System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à Database!");
+                    }
+
+
+
 
                     //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
 
-
+                    /*
                     if (msgtype == 2) { //bulk
                         int numPackets = objectStream.readInt(); // read the number of packets being received
                         Packet[] packets1 = new Packet[numPackets];
@@ -80,7 +102,7 @@ public class Veiculo {
                         }
                     } else {//outros tipos.....
                         System.out.println("<<pacote invalido!>>");
-                    }
+                    }*/
                 }
             } catch (Exception e) {
                 //System.out.println("depois de ");
@@ -117,34 +139,67 @@ public class Veiculo {
 
                     // create the broadcast address
                     socketEnviar.setBroadcast(true);
-                    InetAddress broadcastAddr = InetAddress.getByName("ff02::1");
+                    InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
 
-                    if (!database.isEmpty()) {//databse not empty
+                     /*
+                    List<Packet> packetList = new ArrayList<>(); // list of packets para enviar
+                    byte[][] packets = new byte[packetList.size()][];
+                    for (int i = 0; i < packetList.size(); i++) {
+                    packets[i] = packetList.get(i).toByteArray();
+                    }*/
+
+
+                    //if (database.isEmpty()) {//databse not empty
 
                         List<Packet> Lpacotes = new ArrayList<>();
-                        for (ArrayList<Packet> Plist : database.values()) {
-                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
-                        }
+
+                        /*if(!database.isEmpty()) {
+                            for (ArrayList<Packet> Plist : database.values()) {
+                                Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
+                            }
+                        }*/
 
                         //adicionar o proprio
                         Lpacotes.add(new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
-                        Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
+
+                        for(Packet p : Lpacotes){
+                            System.out.println("["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
+                        }
+
+                        //Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
+
+                        byte[][] packets = new byte[Lpacotes.size()][];
+                        for (int i = 0; i < Lpacotes.size(); i++) {
+                            packets[i] = Lpacotes.get(i).packetToByteArray();
+                        }
+                    System.out.println("antes de createPaacketArray!");
+                        byte[] datab = Packet.createPacketArray(packets);
+                    System.out.println("depois de createPaacketArray!");
+
+                        //System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]
+
                         //tipo 2
-                        DatagramPacket data = Utils.sendPackets(broadcastAddr, 4321, pacotes);
-                        socketEnviar.send(data);
+                        DatagramPacket requestb = new DatagramPacket(datab,datab.length,broadcastAddr,4321);
+                        socketEnviar.send(requestb);
 
                         System.out.println("Pacote tipo 2 enviado a para broadcast!");
 
-                    } else {
+                    /*} else {
                         //tipo 1 (info normnal)
                         Packet p = new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
-                        DatagramPacket request = Utils.sendPacket(broadcastAddr, 4321, p);
+                        //DatagramPacket request = Utils.sendPacket(broadcastAddr, 4321, p);
+
+                        byte[] data = Packet.createByteArray(p);
+
+                        //enviar sempre bulk info? enviar sempre Packet.createPacketArray()!
+                        DatagramPacket request = new DatagramPacket(data, data.length,broadcastAddr,4321);
+
                         socketEnviar.send(request);
 
-                        System.out.println("Pacote tipo 1 enviado a para broadcast!");
+                        System.out.println("Pacote tipo 1 (Novo) enviado a para broadcast!");
 
-                    }
-                    Thread.sleep(10000);
+                    }*/
+                    Thread.sleep(5000);//5s
                 }
 
             } catch (IOException e) {

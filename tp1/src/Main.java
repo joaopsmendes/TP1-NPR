@@ -8,7 +8,7 @@ public class Main {
         //Veiculo v = new Veiculo(InetAddress.getByName(ip));
 
         if (args.length < 2) {
-            System.out.println("syntax: javac Main ...");
+            System.out.println("syntax error!");
             return;
         }
 
@@ -16,7 +16,8 @@ public class Main {
 
         if (args[0].equals("V")) {
 
-            Veiculo v = new Veiculo(InetAddress.getByName(ip));
+            //Veiculo v = new Veiculo(InetAddress.getByName(ip));
+            Veiculo v = new Veiculo();
 
 
         }else if(args[0].equals("RSU")){

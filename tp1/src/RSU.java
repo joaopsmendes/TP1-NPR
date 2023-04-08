@@ -22,13 +22,19 @@ public class RSU{
 
         this.databaseRSU = new HashMap<>();
 
-        new Thread(() -> {
-            try {
-                Thread.sleep(10000);
-                for (Map.Entry<String, ArrayList<Packet>> entry : databaseRSU.entrySet()) {
-                    System.out.println(">" + entry.getKey() + " : Recent Info: " + packetToString(entry.getValue().get(databaseRSU.size() - 1)));}
+        new Thread(() -> {//por while
+            while(true) {
+
+                try {
+                    Thread.sleep(10000);//10s
+                    for (Map.Entry<String, ArrayList<Packet>> entry : databaseRSU.entrySet()) {
+                        System.out.println(">" + entry.getKey() + " : Recent Info: " + packetToString(entry.getValue().get(databaseRSU.size() - 1)));
+                    }
                     //System.out.println("RSU ON!");
-            } catch (InterruptedException e) {throw new RuntimeException(e);}
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }).start();
 
         new Thread(() -> { // THREAD PARA receber
