@@ -11,7 +11,7 @@ public class Packet implements Serializable {
 
     //private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
     //int -> nº pacotes
-    private Integer ip;
+    private Integer ip;//número do nodo CORE
     private double coordX;
     private double coordY;
     private Integer estadoPiso;// 0->seco | 1->chuva | 2->neve | 3->gelo
@@ -88,8 +88,8 @@ public class Packet implements Serializable {
         this.velocidade = p.getVelocidade();
     }
     public String toString() {
-        return "Packet [ip=" + ip + ", coordX=" + coordX + ", coordY=" + coordY +
-                ", estadoPiso=" + estadoPiso + ", velocidade=" + velocidade + "]";
+        return "Packet [id=" + ip + "|Coordenadas= (" + coordX + "," + coordY +
+                ")|EstadoPiso=" + estadoPiso + "|Velocidade=" + velocidade + "]";
     }
 
     public static byte[] createPacketArray(List<Packet> packets) {//varios pacotes a enviar!

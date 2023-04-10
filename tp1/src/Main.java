@@ -6,6 +6,7 @@ public class Main {
         //String ip = "2001:13::7";
 
         //Veiculo v = new Veiculo(InetAddress.getByName(ip));
+        //System.out.println("syntax: java Main V/RSU");
 
         if (args.length < 2) {
             System.out.println("syntax error!");
@@ -14,15 +15,18 @@ public class Main {
 
         String ip = args[1];
 
-        if (args[0].equals("V")) {
+        switch (args[0]) {
+            case "V" -> {
+                Veiculo v = new Veiculo(InetAddress.getByName(ip));
+            }
+            //Veiculo v = new Veiculo();
 
-            //Veiculo v = new Veiculo(InetAddress.getByName(ip));
-            Veiculo v = new Veiculo();
-
-
-        }else if(args[0].equals("RSU")){
-            RSU rsu = new RSU(InetAddress.getByName(ip));
-
+            case "RSU" -> {
+                RSU rsu = new RSU(InetAddress.getByName(ip));
+            }
+            case "SV" -> {
+                Servidor sv = new Servidor();
+            }
         }
     }
 }
