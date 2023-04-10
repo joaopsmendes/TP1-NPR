@@ -19,7 +19,7 @@ public class Veiculo {
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
-    public Map<String, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added! (numero do nodo?)
+    public Map<Integer, ArrayList<Packet>> database; //no array get("list".size()-1) para ultimo added! (numero do nodo?)
 
 
 
@@ -42,29 +42,40 @@ public class Veiculo {
 
                     socketReceber.receive(arrayRecebido);
 
-                    System.out.println("Packet recebido de: "+ arrayRecebido.getAddress());
+
+
+                    try {
+                        //List<Packet> packetsRecebidos = Packet.extractPackets(Arrays.copyOfRange(bufferr, 0, arrayRecebido.getLength()));
+                        //List<Packet> packetsRecebidos = Packet.extractPackets(bufferr);
+
+                        byte[] receivedData = Arrays.copyOfRange(arrayRecebido.getData(), arrayRecebido.getOffset(), arrayRecebido.getLength());
+                        List<Packet> packetsRecebidos = Packet.extractPackets(receivedData);
+
+                        System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
+
+
+                        int i=1;//print packet
+                        for (Packet p : packetsRecebidos) {
+
+                            if (database.containsKey(p.getIp())) {
+                                database.get(p.getIp()).add(p);
+                            } else {
+                                ArrayList<Packet> listCarMsgs = new ArrayList<>();
+                                listCarMsgs.add(p);
+                                database.put(p.getIp(), listCarMsgs);
+                            }
+                            //System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à Database!");
+                            //System.out.println(p.toString());
+                            System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
+                        }
+                    }catch (Exception e) {
+                        //System.out.println("depois de ");
+                        e.printStackTrace();
+                    }
 
                     //ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr); //será que se pode enviar apenas isto?? e tirar as variaveis com objectStream.read() ??
                     //ObjectInputStream objectStream = new ObjectInputStream(byteStream);
                     //int msgtype = objectStream.readInt();
-
-                    List<Packet> packetsRecebidos = Packet.extractPackets(arrayRecebido.getData());
-
-                    int i=1;//print packet
-                    for (Packet p : packetsRecebidos) {
-
-                        if (database.containsKey(p.getIp())) {
-                            database.get(p.getIp()).add(p);
-                        } else {
-                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                            listCarMsgs.add(p);
-                            database.put(p.getIp(), listCarMsgs);
-                        }
-                        System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à Database!");
-                    }
-
-
-
 
                     //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
 
@@ -121,6 +132,9 @@ public class Veiculo {
                     String directoryName = targetPath.getFileName().toString();
                     String vehicleID = directoryName.substring(0, Math.min(directoryName.length(), 3));
 
+                    String vehicleIDint = directoryName.substring(1, Math.min(directoryName.length(), 3));
+                    int vIDint = Integer.parseInt(vehicleIDint);
+
                     // Read the file with the prefix in the parent directory
                     // Read the coordinates from the file
                     Path filePath = targetPath.getParent().resolve(vehicleID + ".xy");
@@ -131,7 +145,7 @@ public class Veiculo {
                         x = Double.parseDouble(tokens[0]);
                         y = Double.parseDouble(tokens[1]);
 
-                        System.out.println("Ficheiro " + vehicleID + ".xy Lido! (" + x + " , " + y + ")");
+                        System.out.println("A ler " + vehicleID + ".xy ... OK! ["+x+","+y+"]");
 
                     } catch (IOException e) {
                         System.out.println("ERRO: ficheiro .xy não foi lido!");
@@ -140,14 +154,6 @@ public class Veiculo {
                     // create the broadcast address
                     socketEnviar.setBroadcast(true);
                     InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
-
-                     /*
-                    List<Packet> packetList = new ArrayList<>(); // list of packets para enviar
-                    byte[][] packets = new byte[packetList.size()][];
-                    for (int i = 0; i < packetList.size(); i++) {
-                    packets[i] = packetList.get(i).toByteArray();
-                    }*/
-
 
                     //if (database.isEmpty()) {//databse not empty
 
@@ -160,29 +166,32 @@ public class Veiculo {
                         }*/
 
                         //adicionar o proprio
-                        Lpacotes.add(new Packet(vehicleID, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
+                        Lpacotes.add(new Packet(vIDint, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
 
                         for(Packet p : Lpacotes){
-                            System.out.println("["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
+                            System.out.println(">["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
                         }
 
                         //Packet[] pacotes = Lpacotes.toArray(new Packet[0]);
 
-                        byte[][] packets = new byte[Lpacotes.size()][];
-                        for (int i = 0; i < Lpacotes.size(); i++) {
+                        //byte[][] packets = new byte[Lpacotes.size()][];
+                        /*for (int i = 0; i < Lpacotes.size(); i++) {
                             packets[i] = Lpacotes.get(i).packetToByteArray();
-                        }
+                        }*/
                     System.out.println("antes de createPaacketArray!");
-                        byte[] datab = Packet.createPacketArray(packets);
+                        byte[] datab = Packet.createPacketArray(Lpacotes);
                     System.out.println("depois de createPaacketArray!");
 
                         //System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]
 
                         //tipo 2
                         DatagramPacket requestb = new DatagramPacket(datab,datab.length,broadcastAddr,4321);
+
+                        System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
+
                         socketEnviar.send(requestb);
 
-                        System.out.println("Pacote tipo 2 enviado a para broadcast!");
+                        System.out.println("Pacote tipo 2 enviado a para o grupo!");
 
                     /*} else {
                         //tipo 1 (info normnal)

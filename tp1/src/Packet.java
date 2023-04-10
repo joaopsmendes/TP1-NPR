@@ -11,7 +11,7 @@ public class Packet implements Serializable {
 
     //private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
     //int -> nº pacotes
-    private String ip;
+    private Integer ip;
     private double coordX;
     private double coordY;
     private Integer estadoPiso;// 0->seco | 1->chuva | 2->neve | 3->gelo
@@ -70,7 +70,7 @@ public class Packet implements Serializable {
         }
     }
 
-    public Packet(String ip, double coordX, double coordY, int estadoPiso, int velocidade) {
+    public Packet(Integer ip, double coordX, double coordY, int estadoPiso, int velocidade) {
         //this.msgType = type;
         this.ip = ip;
         this.coordX = coordX;
@@ -87,60 +87,26 @@ public class Packet implements Serializable {
         this.estadoPiso = p.getEstadoPiso();
         this.velocidade = p.getVelocidade();
     }
-
-    /*public Packet(byte[] arr) {
-
-        int offset = 0;
-        byte[] ipBytes = Arrays.copyOfRange(arr, offset, offset + 16);
-        this.ip = new String(ipBytes).trim(); // IP address - string 16 bytes
-        offset += 16;
-        this.coordX = ByteBuffer.wrap(Arrays.copyOfRange(arr, offset, offset + 8)).getDouble();
-        offset += 8;
-        this.coordY = ByteBuffer.wrap(Arrays.copyOfRange(arr, offset, offset + 8)).getDouble();
-        offset += 8;
-        this.estadoPiso = EstadoPiso.valueOf(new String(Arrays.copyOfRange(arr, offset, offset + 5)).trim()); // estadoPiso  string
-        offset += 5;
-        int velocidadeValue = ByteBuffer.wrap(Arrays.copyOfRange(arr, offset, offset + 4)).getInt(); // velocidade  int
-        offset += 4;
-        for (Velocidade v : Velocidade.values()) {
-            if (v.getValor() == velocidadeValue) {
-                this.velocidade = v;
-                break;
-            }
-        }
-    }*/
-    public Packet(byte[] data) {
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        byte[] ipBytes = new byte[16];
-        buffer.get(ipBytes);
-        this.ip = new String(ipBytes).trim();
-        this.coordX = buffer.getDouble();
-        this.coordY = buffer.getDouble();
-        this.estadoPiso = buffer.getInt();
-        this.velocidade = buffer.getInt();
+    public String toString() {
+        return "Packet [ip=" + ip + ", coordX=" + coordX + ", coordY=" + coordY +
+                ", estadoPiso=" + estadoPiso + ", velocidade=" + velocidade + "]";
     }
-    public static byte[] createByteArray(Packet packet) {
-        return packet.packetToByteArray();
-    }
-    //how to do!
 
-    /*
-    List<Packet> packetList = ...; // list of packets
-    byte[][] packets = new byte[packetList.size()][];
-    for (int i = 0; i < packetList.size(); i++) {
-    packets[i] = packetList.get(i).toByteArray();
-    }
-    */
-    public static byte[] createPacketArray(byte[][] packets) {//varios pacotes a enviar!
-        int numPackets = packets.length;
-        int packetSize = packets[0].length;
-        int totalSize = 4 + (numPackets * packetSize); // 4 bytes for the packet count
+    public static byte[] createPacketArray(List<Packet> packets) {//varios pacotes a enviar!
+        int numPackets = packets.size();
+        int packetSize = Integer.BYTES + 2 * Double.BYTES + 2 * Integer.BYTES;;
+        int totalSize = Integer.BYTES + (numPackets * packetSize); // 4 bytes for the packet count
 
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         buffer.putInt(numPackets);
 
-        for (byte[] packet : packets) {
-            buffer.put(packet);
+        for (Packet packet : packets) {
+
+            buffer.putInt(packet.getIp());
+            buffer.putDouble(packet.getCoordX());
+            buffer.putDouble(packet.getCoordY());
+            buffer.putInt(packet.getEstadoPiso());
+            buffer.putInt(packet.getVelocidade());
         }
 
         return buffer.array();
@@ -148,81 +114,33 @@ public class Packet implements Serializable {
     public static List<Packet> extractPackets(byte[] packetArray) {
         ByteBuffer buffer = ByteBuffer.wrap(packetArray);
         int numPackets = buffer.getInt();
-        int packetSize = (packetArray.length - 4) / numPackets;
+        //int packetSize = (packetArray.length - 4) / numPackets;
+        //int packetSize = Integer.BYTES + 2 * Double.BYTES + 2 * Integer.BYTES;
 
         List<Packet> packets = new ArrayList<>();
-        for (int i = 0; i < numPackets; i++) {
+        /*for (int i = 0; i < numPackets; i++) {
             byte[] packetData = new byte[packetSize];
             buffer.get(packetData);
             packets.add(new Packet(packetData));
+        }*/
+        for (int i = 0; i < numPackets; i++) {
+            int ip = buffer.getInt();
+            double coordX = buffer.getDouble();
+            double coordY = buffer.getDouble();
+            int estadoPiso = buffer.getInt();
+            int velocidade = buffer.getInt();
+
+            packets.add(new Packet(ip, coordX, coordY, estadoPiso, velocidade));
         }
 
         return packets;
     }
 
-    /*ublic static List<Packet> extractPackets(byte[] packetArray) {//definir tamanho do pacote!
-        // Extract the number of packets from the first four bytes
-        ByteBuffer buffer = ByteBuffer.wrap(packetArray);
-        int numPackets = buffer.getInt();
-        int packetSize = 1024;
-
-        // Create a 2D byte array to hold the packets
-        //byte[][] packets = new byte[numPackets][packetSize];
-
-        List<Packet> allPacketsReceived = new ArrayList<>();
-
-        // Loop over the remaining bytes in the array and extract the packets
-        int offset = 4; // Skip the first four bytes
-        for (int i = 0; i < numPackets; i++) {
-            byte[] packet = new byte[packetSize];
-            System.arraycopy(packetArray, offset, packet, 0, packetSize);
-            allPacketsReceived.add(new Packet(packet)); //construtor byte[]
-            offset += packetSize;
-        }
-
-        return allPacketsReceived;
-    }*/
-    public byte[] packetToByteArray() {
-        ByteBuffer buffer = ByteBuffer.allocate(28);
-        buffer.put(this.ip.getBytes());
-        buffer.putDouble(this.coordX);
-        buffer.putDouble(this.coordY);
-        buffer.putInt(this.estadoPiso);
-        buffer.putInt(this.velocidade);
-
-        return buffer.array();
-    }
-
-    /*public byte[] packetToByteArray() {
-        // Calculate the total length of the byte array
-        int totalLength = 16 + 8 + 8 + 5 + 4;
-
-        byte[] ipBytes = Arrays.copyOf(this.ip.getBytes(), 16);
-        byte[] coordXBytes = ByteBuffer.allocate(8).putDouble(this.coordX).array();
-        byte[] coordYBytes = ByteBuffer.allocate(8).putDouble(this.coordY).array();
-        byte[] estadoPisoBytes = Arrays.copyOf(this.estadoPiso.toString().getBytes(), 5);
-        byte[] velocidadeBytes = ByteBuffer.allocate(4).putInt(this.velocidade.getValor()).array();
-
-        byte[] result = new byte[totalLength];
-        int offset = 0;
-        System.arraycopy(ipBytes, 0, result, offset, ipBytes.length);
-        offset += ipBytes.length;
-        System.arraycopy(coordXBytes, 0, result, offset, coordXBytes.length);
-        offset += coordXBytes.length;
-        System.arraycopy(coordYBytes, 0, result, offset, coordYBytes.length);
-        offset += coordYBytes.length;
-        System.arraycopy(estadoPisoBytes, 0, result, offset, estadoPisoBytes.length);
-        offset += estadoPisoBytes.length;
-        System.arraycopy(velocidadeBytes, 0, result, offset, velocidadeBytes.length);
-
-        return result;
-    }*/
-
-    public String getIp() {
+    public Integer getIp() {
         return ip;
     }
 
-    public void setIp(String ip) {
+    public void setIp(Integer ip) {
         this.ip = ip;
     }
 

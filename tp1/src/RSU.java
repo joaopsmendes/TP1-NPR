@@ -12,7 +12,7 @@ public class RSU{
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
-    public Map<String, ArrayList<Packet>> databaseRSU;
+    public Map<Integer, ArrayList<Packet>> databaseRSU;
 
 
     public RSU(InetAddress ipserver) throws IOException {
@@ -27,7 +27,7 @@ public class RSU{
 
                 try {
                     Thread.sleep(10000);//10s
-                    for (Map.Entry<String, ArrayList<Packet>> entry : databaseRSU.entrySet()) {
+                    for (Map.Entry<Integer, ArrayList<Packet>> entry : databaseRSU.entrySet()) {
                         System.out.println(">" + entry.getKey() + " : Recent Info: " + packetToString(entry.getValue().get(databaseRSU.size() - 1)));
                     }
                     //System.out.println("RSU ON!");
