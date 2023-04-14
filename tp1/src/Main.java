@@ -15,18 +15,16 @@ public class Main {
 
         String ip = args[1];
 
-        switch (args[0]) {
-            case "V" -> {
-                Veiculo v = new Veiculo(InetAddress.getByName(ip));
-            }
+        if (args[0].equals("V")) {
+
+            Veiculo v = new Veiculo(InetAddress.getByName(ip));
             //Veiculo v = new Veiculo();
 
-            case "RSU" -> {
-                RSU rsu = new RSU(InetAddress.getByName(ip));
-            }
-            case "SV" -> {
-                Servidor sv = new Servidor();
-            }
+        }else if(args[0].equals("RSU")){
+            RSU rsu = new RSU(InetAddress.getByName(ip));
+
+        }else if(args[0].equals("SV")) {
+            Servidor sv = new Servidor();
         }
     }
 }

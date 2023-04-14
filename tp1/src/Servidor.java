@@ -37,7 +37,7 @@ public class Servidor{
                         List<Packet> packetsRecebidos = Packet.extractPackets(receivedData);
 
                         //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
-                        
+
                         for (Packet p : packetsRecebidos) {
 
                             if(checkDistance(p.getCoordX(),p.getCoordY())<500){//distancia ao servidor! 500m
@@ -55,6 +55,8 @@ public class Servidor{
 
                                 System.out.println("Veiculo ["+p.getIp() + "] fora da area de interesse!");
 
+                                databaseSV.remove(p.getIp());
+
                             }
                         }
                     }catch (Exception e) {
@@ -65,6 +67,23 @@ public class Servidor{
             } catch (Exception e) {
                 //System.out.println("depois de ");
                 e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> {//por while
+            while(true) {
+
+                try {
+                    Thread.sleep(15000);//15s
+
+                        //System.out.println("$" + entry.getKey() + " : Recent Info: " + entry.getValue().get(databaseRSU.size() - 1).toString());
+                        System.out.println("Número de veiculos na região de interesse: " + databaseSV.keySet().size());
+                        System.out.println("Velocidade Recomendada: 100 Km/h");
+
+                    //System.out.println("RSU ON!");
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }).start();
     }

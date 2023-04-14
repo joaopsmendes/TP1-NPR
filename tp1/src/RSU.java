@@ -16,15 +16,19 @@ public class RSU{
 
     public Map<Integer, ArrayList<Packet>> databaseRSU;
 
+    public List<Packet> DBlistRSU;
+
 
     public RSU(InetAddress ipserver) throws IOException {
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
 
-        this.databaseRSU = new HashMap<>();
+        //this.databaseRSU = new HashMap<>();
 
-        new Thread(() -> {//por while
+        this.DBlistRSU = new ArrayList<>();
+
+        /*new Thread(() -> {//por while
             while(true) {
 
                 try {
@@ -37,7 +41,7 @@ public class RSU{
                     throw new RuntimeException(e);
                 }
             }
-        }).start();
+        }).start();*/
 
         new Thread(() -> { // THREAD PARA receber
             try {
@@ -64,8 +68,7 @@ public class RSU{
                         //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
 
 
-                        int i=1;//print packet
-                        for (Packet p : packetsRecebidos) {
+                        /*for (Packet p : packetsRecebidos) {
 
                             if (databaseRSU.containsKey(p.getIp())) {
                                 databaseRSU.get(p.getIp()).add(p);
@@ -74,9 +77,50 @@ public class RSU{
                                 listCarMsgs.add(p);
                                 databaseRSU.put(p.getIp(), listCarMsgs);
                             }
-                            System.out.println(">Pacote recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
+                            System.out.println("-> Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                             //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
+                        }*/
+
+                        DBlistRSU.clear();
+                        for (Packet p : packetsRecebidos) {
+
+                            DBlistRSU.add(p);
+
+                            System.out.println("-> Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                         }
+
+                        new Thread(() -> { // enviar msg
+                            try {
+                                //while(true) {
+
+                                    List<Packet> Lpacotes = new ArrayList<>(DBlistRSU);
+
+                                    byte[] datab = Packet.createPacketArray(Lpacotes);
+                                    //tipo x
+                                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
+
+                                    //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
+
+                                    socketEnviar.send(requestb);
+
+                                    for (Packet Psend : DBlistRSU) {
+
+                                        System.out.println("$ Recent Info: " + Psend.toString());
+                                    }
+
+                                    System.out.println("! Dados enviados ao servidor !");
+
+                                    Thread.sleep(10000);//10s
+                                //}
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }).start();
+
+                        System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
                         e.printStackTrace();
@@ -85,43 +129,6 @@ public class RSU{
             } catch (Exception e) {
                 //System.out.println("depois de ");
                 e.printStackTrace();
-            }
-        }).start();
-
-        new Thread(() -> { // enviar msg
-            try {
-                while(true) {
-
-                    List<Packet> Lpacotes = new ArrayList<>();
-
-                    if(!databaseRSU.isEmpty()) {
-                        for (ArrayList<Packet> Plist : databaseRSU.values()) {
-                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
-                        }
-                    }
-
-                    /*for(Packet p : Lpacotes){
-                        System.out.println(">Pacote enviado: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
-                    }*/
-
-                    byte[] datab = Packet.createPacketArray(Lpacotes);
-
-                    //tipo x
-                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
-
-                    //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
-
-                    socketEnviar.send(requestb);
-
-                    System.out.println("Dados enviados ao servidor!");
-
-                    Thread.sleep(10000);//10s
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
         }).start();
     }
