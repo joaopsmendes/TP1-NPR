@@ -50,13 +50,7 @@ public class Veiculo {
 
                     socketReceber.receive(arrayRecebido);
 
-                    //InetAddress localHost = InetAddress.getLocalHost();
-                    //if (arrayRecebido.getAddress().equals(ip)) continue;
-                    //if(arrayRecebido.getAddress().equals(ip)) continue;
-
                     try {
-                        //List<Packet> packetsRecebidos = Packet.extractPackets(Arrays.copyOfRange(bufferr, 0, arrayRecebido.getLength()));
-                        //List<Packet> packetsRecebidos = Packet.extractPackets(bufferr);
 
                         byte[] receivedData = Arrays.copyOfRange(arrayRecebido.getData(), arrayRecebido.getOffset(), arrayRecebido.getLength());
                         List<Packet> packetsRecebidos = Packet.extractPackets(receivedData);
@@ -64,20 +58,39 @@ public class Veiculo {
                         if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
 
 
-                        DBlist.clear();
+                        //DBlist.clear();
                         //int i=1;//print packet
 
-                        for(Packet p : packetsRecebidos){
+                        /*for(Packet p : packetsRecebidos){
                             if(p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
 
                             DBlist.add(p);
 
                             System.out.println("-> Pacote Recebido: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-                            //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
+                        }*/
+                        //System.out.println();
 
-                        }
+                                /*socketEnviar.setBroadcast(true);
+                                InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
 
-                        /*for (Packet p : packetsRecebidos) {
+                                List<Packet> Lpacotes = new ArrayList<>(DBlist);
+
+                                byte[] datab = Packet.createPacketArray(Lpacotes);
+                                //tipo x
+                                DatagramPacket requestb = new DatagramPacket(datab,datab.length,broadcastAddr,4321);
+
+                                //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
+
+                                socketEnviar.send(requestb);
+
+                                for (Packet p : DBlist) {
+
+                                    System.out.println("-> Pacote Enviado: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                }*/
+
+
+
+                        for (Packet p : packetsRecebidos) {
 
                             if(p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
 
@@ -88,56 +101,15 @@ public class Veiculo {
                                 listCarMsgs.add(p);
                                 database.put(p.getIp(), listCarMsgs);
                             }
-                            System.out.println("-> Pacote Recebido: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                            System.out.println("<- Pacote Recebido: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                             //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
-                        }*/
+                        }
+
                         System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
                         e.printStackTrace();
                     }
-
-                    //ByteArrayInputStream byteStream = new ByteArrayInputStream(bufferr); //será que se pode enviar apenas isto?? e tirar as variaveis com objectStream.read() ??
-                    //ObjectInputStream objectStream = new ObjectInputStream(byteStream);
-                    //int msgtype = objectStream.readInt();
-
-                    //System.out.println("Veiculo " + ipAddress + " recebeu pacote!");
-
-                    /*
-                    if (msgtype == 2) { //bulk
-                        int numPackets = objectStream.readInt(); // read the number of packets being received
-                        Packet[] packets1 = new Packet[numPackets];
-                        for (int i = 0; i < numPackets; i++) {
-                            packets1[i] = (Packet) objectStream.readObject(); // read each packet from the stream
-                        }
-                        int i=1;//print packet
-                        for (Packet p : packets1) {
-
-                            if (database.containsKey(p.getIp())) {
-                                database.get(p.getIp()).add(p);
-                            } else {
-                                ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                                listCarMsgs.add(p);
-                                database.put(p.getIp(), listCarMsgs);
-                            }
-                            System.out.println("Packet "+ i++ + " : ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"] adicionado à Database!");
-                        }
-
-                        // Handle received packets as needed
-                    } else if (msgtype == 1) { //1 packet -> NÃO SE USA?
-                        Packet[] packets1 = new Packet[1];
-                        packets1[0] = (Packet) objectStream.readObject();
-
-                        if (database.containsKey(packets1[0].getIp())) {
-                            database.get(packets1[0].getIp()).add(packets1[0]);
-                        } else {
-                            ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                            listCarMsgs.add(packets1[0]);
-                            database.put(packets1[0].getIp(), listCarMsgs);
-                        }
-                    } else {//outros tipos.....
-                        System.out.println("<<pacote invalido!>>");
-                    }*/
                 }
             } catch (Exception e) {
                 //System.out.println("depois de ");
@@ -179,12 +151,20 @@ public class Veiculo {
                     socketEnviar.setBroadcast(true);
                     InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
 
+                    //enviar apenas a info propria !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!| INFO PROPRIA |!!!!!!!!!!!!!
+
                     List<Packet> Lpacotes = new ArrayList<>();
 
-                    if(!DBlist.isEmpty()) {
+                    if(!database.isEmpty()) {
+                        for (ArrayList<Packet> Plist : database.values()) {
+                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
+                        }
+                    }
+
+                    /*if(!DBlist.isEmpty()) {
                         //last added???
                         Lpacotes.addAll(DBlist);
-                    }
+                    }*/
 
                     //adicionar o proprio
                     Lpacotes.add(new Packet(vehicleNodeNumber, x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade()));
@@ -202,7 +182,7 @@ public class Veiculo {
                     for(Packet p : Lpacotes){
                         System.out.println("-> Pacote Enviado: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                     }
-                    System.out.println();
+                    //System.out.println();
 
                     /*} else {
                         //tipo 1 (info normnal)

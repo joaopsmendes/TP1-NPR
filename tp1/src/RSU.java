@@ -24,7 +24,7 @@ public class RSU{
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
 
-        //this.databaseRSU = new HashMap<>();
+        this.databaseRSU = new HashMap<>();
 
         this.DBlistRSU = new ArrayList<>();
 
@@ -68,7 +68,7 @@ public class RSU{
                         //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
 
 
-                        /*for (Packet p : packetsRecebidos) {
+                        for (Packet p : packetsRecebidos) {
 
                             if (databaseRSU.containsKey(p.getIp())) {
                                 databaseRSU.get(p.getIp()).add(p);
@@ -77,48 +77,18 @@ public class RSU{
                                 listCarMsgs.add(p);
                                 databaseRSU.put(p.getIp(), listCarMsgs);
                             }
-                            System.out.println("-> Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                            System.out.println("<- Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                             //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
-                        }*/
+                        }
 
-                        DBlistRSU.clear();
+                        /*DBlistRSU.clear();
                         for (Packet p : packetsRecebidos) {
 
                             DBlistRSU.add(p);
 
                             System.out.println("-> Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-                        }
-
-                        new Thread(() -> { // enviar msg
-                            try {
-                                //while(true) {
-
-                                    List<Packet> Lpacotes = new ArrayList<>(DBlistRSU);
-
-                                    byte[] datab = Packet.createPacketArray(Lpacotes);
-                                    //tipo x
-                                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
-
-                                    //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
-
-                                    socketEnviar.send(requestb);
-
-                                    for (Packet Psend : DBlistRSU) {
-
-                                        System.out.println("$ Recent Info: " + Psend.toString());
-                                    }
-
-                                    System.out.println("! Dados enviados ao servidor !");
-
-                                    Thread.sleep(10000);//10s
-                                //}
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }).start();
+                        }*/
+                        //thread para enviar após a receção
 
                         System.out.println();
                     }catch (Exception e) {
@@ -129,6 +99,44 @@ public class RSU{
             } catch (Exception e) {
                 //System.out.println("depois de ");
                 e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> { // enviar msg
+            try {
+                while(true) {
+
+                    List<Packet> Lpacotes = new ArrayList<>();
+
+
+
+                    if(!databaseRSU.isEmpty()) {
+                        for (ArrayList<Packet> Plist : databaseRSU.values()) {
+                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
+                        }
+                    }
+
+                    byte[] datab = Packet.createPacketArray(Lpacotes);
+                    //tipo x
+                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
+
+                    //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
+
+                    socketEnviar.send(requestb);
+
+                    for (Packet Psend : Lpacotes) {
+
+                        System.out.println("$ Recent Info: " + Psend.toString());
+                    }
+                    System.out.println("! Dados enviados ao servidor !");
+
+                    Thread.sleep(10000);//10s
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
     }
