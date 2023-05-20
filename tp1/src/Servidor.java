@@ -8,6 +8,10 @@ public class Servidor{
 
     //pos: 106,438
 
+    final double xServer = 106.0;
+    final double yServer = 438.0;
+
+
     public Map<Integer, ArrayList<Packet>> databaseSV;
 
     private DatagramSocket socketEnviar;
@@ -40,7 +44,7 @@ public class Servidor{
 
                         for (Packet p : packetsRecebidos) {
 
-                            if(checkDistance(p.getCoordX(),p.getCoordY())<500){//distancia ao servidor! 500m
+                            if(Packet.checkDistance(p.getCoordX(),p.getCoordY(),xServer, yServer)<500){//distancia ao servidor! 500m
 
                                 if (databaseSV.containsKey(p.getIp())) {
                                     databaseSV.get(p.getIp()).add(p);
@@ -87,9 +91,5 @@ public class Servidor{
             }
         }).start();
     }
-    public static double checkDistance(double x1, double y1) {
-        double dx = 106 - x1;
-        double dy = 438 - y1;
-        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-    }
+
 }

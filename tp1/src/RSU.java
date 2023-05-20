@@ -4,6 +4,7 @@ import java.net.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class RSU{
 
@@ -16,17 +17,37 @@ public class RSU{
 
     public Map<Integer, ArrayList<Packet>> databaseRSU;
 
-    public List<Packet> DBlistRSU;
+    public List<VehicleInfo> neighborsList;
+    public List<Packet> listDatabaseRSU;
+
+    public Integer nodeNumber;
+    public Double x;
+    public Double y;
+
+    final double xRSU = 277.0;
+    final double yRSU = 428.0;
+
+    int timeout;
+
+    ReentrantLock lockDB;
+    ReentrantLock lockVizinhos;
 
 
-    public RSU(InetAddress ipserver) throws IOException {
+    public RSU(InetAddress ipserver,InetAddress iprsu) throws IOException {
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
 
         this.databaseRSU = new HashMap<>();
 
-        this.DBlistRSU = new ArrayList<>();
+        this.neighborsList = new ArrayList<>();
+
+        this.listDatabaseRSU = new ArrayList<>();
+
+        this.timeout = 1000;
+
+        this.lockDB = new ReentrantLock();
+        this.lockVizinhos = new ReentrantLock();
 
         /*new Thread(() -> {//por while
             while(true) {
@@ -54,42 +75,64 @@ public class RSU{
 
                     socketReceber.receive(arrayRecebido);
 
-                    //InetAddress localHost = InetAddress.getLocalHost();
-                    //if (arrayRecebido.getAddress().equals(ip)) continue;
-                    //if(arrayRecebido.getAddress().equals(ip)) continue;
-
                     try {
-                        //List<Packet> packetsRecebidos = Packet.extractPackets(Arrays.copyOfRange(bufferr, 0, arrayRecebido.getLength()));
-                        //List<Packet> packetsRecebidos = Packet.extractPackets(bufferr);
 
                         byte[] receivedData = Arrays.copyOfRange(arrayRecebido.getData(), arrayRecebido.getOffset(), arrayRecebido.getLength());
                         List<Packet> packetsRecebidos = Packet.extractPackets(receivedData);
 
-                        //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
+                        //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());//debug
+
+                        if(packetsRecebidos.size()==1) {//info de pos
+
+                            for (Packet p : packetsRecebidos) {
+
+                                if (p.getIp().equals(nodeNumber)) continue;//check se vem do mesmo!
+
+                                System.out.println("<- Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
 
 
-                        for (Packet p : packetsRecebidos) {
+                                if (p.getType().equals(1)) {//pacote com info de posição (tipo 1) packetsRecebidos.get(packetsRecebidos.size()-1).getType().equals(1)
 
-                            if (databaseRSU.containsKey(p.getIp())) {
-                                databaseRSU.get(p.getIp()).add(p);
-                            } else {
-                                ArrayList<Packet> listCarMsgs = new ArrayList<>();
-                                listCarMsgs.add(p);
-                                databaseRSU.put(p.getIp(), listCarMsgs);
+                                    double tempX = p.getCoordX();
+                                    double tempY = p.getCoordY();
+
+                                    lockVizinhos.lock();
+                                    try{
+
+                                        int flag =0;//se 1 ja existe na tabela!
+                                        for(VehicleInfo neighborInfo : neighborsList){
+                                            if(neighborInfo.getNodeNumber().equals(p.getIp())){
+                                                flag = 1;
+                                                break;
+                                            }
+                                        }
+                                        if(flag==0) neighborsList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
+                                        System.out.println("Nodo " + p.getIp() + "adicionado à tabela de vizinhos!\n");
+                                    }finally {
+                                        lockVizinhos.unlock();
+                                    }
+                                }
                             }
-                            System.out.println("<- Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-                            //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
+                        }else {
+
+                            for (Packet p : packetsRecebidos) {
+
+                                System.out.println("<- Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
+                                if (p.getIp().equals(nodeNumber)) continue;//check se vem do mesmo!
+
+                                if (p.getType().equals(2)) {//pacote com info de estado (tipo 2)
+
+                                    lockDB.lock();
+                                    try{
+                                        listDatabaseRSU.add(p);
+                                    }finally {
+                                        lockDB.unlock();
+                                    }
+
+                                    //mudar aqui, ver se o pacote n é repetido!! numero de sequncia? id de pacote unico?
+                                }
+                            }
                         }
-
-                        /*DBlistRSU.clear();
-                        for (Packet p : packetsRecebidos) {
-
-                            DBlistRSU.add(p);
-
-                            System.out.println("-> Pacote Recebido: ["+p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-                        }*/
-                        //thread para enviar após a receção
-
                         System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
@@ -102,33 +145,38 @@ public class RSU{
             }
         }).start();
 
-        new Thread(() -> { // enviar msg
+        new Thread(() -> { // enviar msg ao SERVIDOR!
             try {
                 while(true) {
 
-                    List<Packet> Lpacotes = new ArrayList<>();
+                    if(!listDatabaseRSU.isEmpty()){
 
+                        ArrayList<Packet> Lpacotes=null;
 
+                        lockDB.lock();
+                        try{
+                            Lpacotes = new ArrayList<>(listDatabaseRSU);
 
-                    if(!databaseRSU.isEmpty()) {
-                        for (ArrayList<Packet> Plist : databaseRSU.values()) {
-                            Lpacotes.add(Plist.get(Plist.size() - 1));//last added???
+                            listDatabaseRSU.clear();
+                        }finally {
+                            lockDB.unlock();
                         }
+
+                        byte[] datab = Packet.createPacketArray(Lpacotes);
+                        //tipo x
+                        DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
+
+                        //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
+
+                        socketEnviar.send(requestb);
+
+                        for (Packet Psend : Lpacotes) {
+
+                            System.out.println("$ Recent Info: " + Psend.toString());
+                        }
+                        System.out.println("! Dados enviados ao servidor !");
+
                     }
-
-                    byte[] datab = Packet.createPacketArray(Lpacotes);
-                    //tipo x
-                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipserver,4321);
-
-                    //if(debug) System.out.println(">Bytes a enviar: " + Arrays.toString(datab));
-
-                    socketEnviar.send(requestb);
-
-                    for (Packet Psend : Lpacotes) {
-
-                        System.out.println("$ Recent Info: " + Psend.toString());
-                    }
-                    System.out.println("! Dados enviados ao servidor !");
 
                     Thread.sleep(10000);//10s
                 }
@@ -137,6 +185,85 @@ public class RSU{
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
+            }
+        }).start();
+
+        new Thread(() -> { // enviar msg pos -> broadcast (RSU envia posição para preencher tabelas de vizinhança!)
+            try {
+                while(true) {
+                    //ler ficheiro e tirar coords
+                    //ler primeiros 3 chars da diretoria atual
+                    Path currentPath = Paths.get("").toAbsolutePath();
+                    Path targetPath = currentPath.getParent().getParent().getParent();
+                    String directoryName = targetPath.getFileName().toString();
+                    String vehicle_nID = directoryName.substring(0, Math.min(directoryName.length(), 3));
+
+                    String vehicleIDint = directoryName.substring(1, Math.min(directoryName.length(), 3));
+                    nodeNumber = Integer.parseInt(vehicleIDint);
+
+                    // Read the file with the prefix in the parent directory
+                    // Read the coordinates from the file
+                    Path filePath = targetPath.getParent().resolve(vehicle_nID + ".xy");
+                    try (BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()))) {
+                        String line = reader.readLine();
+                        String[] tokens = line.split(" ");
+
+                        x = Double.parseDouble(tokens[0]);
+                        y = Double.parseDouble(tokens[1]);
+
+                        System.out.println("A ler " + vehicle_nID + ".xy ... OK! ["+x+","+y+"]");
+
+                    } catch (IOException e) {
+                        System.out.println("ERRO: ficheiro .xy não foi lido!");
+                    }
+
+                    // create the broadcast address
+                    socketEnviar.setBroadcast(true);
+                    InetAddress broadcastAddr = InetAddress.getByName("ff15::1");//multicast addr
+
+                    //enviar apenas a info propria !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!| INFO PROPRIA |!!!!!!!!!!!!!
+                    List<Packet> Lpacotes = new ArrayList<>();
+
+                    Lpacotes.add(new Packet(1,iprsu,nodeNumber, xRSU, yRSU, 0, 0));
+
+                    byte[] datab = Packet.createPacketArray(Lpacotes);
+
+                    //tipo 2
+                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,broadcastAddr,4321);
+                    socketEnviar.send(requestb);
+
+                    System.out.println("! Posição enviada para o grupo Multicast !");
+                    for(Packet p : Lpacotes){
+                        System.out.println("-> Pacote Enviado: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                    }
+
+                    Thread.sleep(5000);//5s
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        new Thread(() -> {
+            while (true) {
+                long currentTime = System.currentTimeMillis();
+
+                lockVizinhos.lock();
+                try{
+                    neighborsList.removeIf(vi -> currentTime - vi.getUpdateTime() > timeout);
+
+                }finally {
+                    lockVizinhos.unlock();
+                }
+                // sleep for some time
+                try {
+                    Thread.sleep(5000); // run every 5 seconds
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }).start();
     }

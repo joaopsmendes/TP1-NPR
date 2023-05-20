@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,9 +9,10 @@ import java.util.List;
 import java.util.Random;
 
 public class Packet implements Serializable {
-
     //private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
     //int -> nº pacotes
+    private Integer type;//1- info normal | 2- info bulk
+    private InetAddress ipaddress;
     private Integer ip;//número do nodo CORE
     private double coordX;
     private double coordY;
@@ -19,6 +21,7 @@ public class Packet implements Serializable {
     //private Velocidade velocidade;
     //private EstadoPiso estadoPiso;
 
+//identificador de 0 ou 1 para distinguir se é info normal ou vulk
 
     //private static final Random rand = new Random();
 
@@ -35,43 +38,9 @@ public class Packet implements Serializable {
         return values[index];
     }
 
-    /*public static Velocidade getRandomVelocidade() {
-        Velocidade[] allVelocidades = Velocidade.values();
-        int randomIndex = rand.nextInt(allVelocidades.length);
-        return allVelocidades[randomIndex];
-    }
-
-    public static EstadoPiso getRandomEstadoPiso() {
-        EstadoPiso[] allEstados = EstadoPiso.values();
-        int randomIndex = rand.nextInt(allEstados.length);
-        return allEstados[randomIndex];
-    }*/
-
-    //hoe to create enum
-    enum EstadoPiso {
-        SECO, CHUVA, NEVE, GELO
-    }
-
-
-    public enum Velocidade {
-        TRINTA(30),
-        CINQUENTA(50),
-        NOVENTA(90),
-        CENTO_VINTE(120);
-
-        private final int valor;
-
-        Velocidade(int valor) {
-            this.valor = valor;
-        }
-
-        public int getValor() {
-            return valor;
-        }
-    }
-
-    public Packet(Integer ip, double coordX, double coordY, int estadoPiso, int velocidade) {
-        //this.msgType = type;
+    public Packet(Integer type,InetAddress ipaddress,Integer ip, double coordX, double coordY, int estadoPiso, int velocidade) {
+        this.type = type;
+        this.ipaddress = ipaddress;
         this.ip = ip;
         this.coordX = coordX;
         this.coordY = coordY;
@@ -80,7 +49,8 @@ public class Packet implements Serializable {
     }
 
     public Packet( Packet p){
-        //this.msgType = p.getMsgType();
+        this.type = p.getType();
+        this.ipaddress = p.getIpaddress();
         this.ip = p.getIp();
         this.coordY = p.getCoordY();
         this.coordX = p.getCoordX();
@@ -88,19 +58,25 @@ public class Packet implements Serializable {
         this.velocidade = p.getVelocidade();
     }
     public String toString() {
-        return "Packet [id=" + ip + "|Coordenadas= (" + coordX + "," + coordY +
+        return "Packet [PktType =" + type  + "|id=" + ip + "|Coordenadas= (" + coordX + "," + coordY +
                 ")|EstadoPiso=" + estadoPiso + "|Velocidade=" + velocidade + "]";
     }
 
     public static byte[] createPacketArray(List<Packet> packets) {//varios pacotes a enviar!
         int numPackets = packets.size();
-        int packetSize = Integer.BYTES + 2 * Double.BYTES + 2 * Integer.BYTES;;
+        int packetSize = 4 * Integer.BYTES + 2 * Double.BYTES + 16;
         int totalSize = Integer.BYTES + (numPackets * packetSize); // 4 bytes for the packet count
 
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         buffer.putInt(numPackets);
 
         for (Packet packet : packets) {
+
+            buffer.putInt(packet.getType());
+
+            //byte[] addressBytes = packet.getIpaddress().getAddress(); // Get the byte array representation of InetAddress
+
+            buffer.put(packet.getIpaddress().getAddress());//???????
 
             buffer.putInt(packet.getIp());
             buffer.putDouble(packet.getCoordX());
@@ -111,7 +87,7 @@ public class Packet implements Serializable {
 
         return buffer.array();
     }
-    public static List<Packet> extractPackets(byte[] packetArray) {
+    public static List<Packet> extractPackets(byte[] packetArray) throws UnknownHostException {
         ByteBuffer buffer = ByteBuffer.wrap(packetArray);
         int numPackets = buffer.getInt();
         //int packetSize = (packetArray.length - 4) / numPackets;
@@ -124,16 +100,35 @@ public class Packet implements Serializable {
             packets.add(new Packet(packetData));
         }*/
         for (int i = 0; i < numPackets; i++) {
+            int type = buffer.getInt();
+
+            byte[] addressBytes = new byte[16];
+            buffer.get(addressBytes);
+            InetAddress ipaddress = InetAddress.getByAddress(addressBytes);
+            //InetAddress ipaddress = buffer.get()
+            //InetAddress ipaddress = buffer.get();
             int ip = buffer.getInt();
             double coordX = buffer.getDouble();
             double coordY = buffer.getDouble();
             int estadoPiso = buffer.getInt();
             int velocidade = buffer.getInt();
 
-            packets.add(new Packet(ip, coordX, coordY, estadoPiso, velocidade));
+            packets.add(new Packet(type,ipaddress,ip, coordX, coordY, estadoPiso, velocidade));
         }
 
         return packets;
+    }
+
+    public InetAddress getIpaddress() {
+        return ipaddress;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     public Integer getIp() {
@@ -200,6 +195,12 @@ public class Packet implements Serializable {
         iStream.close();
 
         return messageClass;
+    }
+
+    public static double checkDistance(double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     }
 
 

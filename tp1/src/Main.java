@@ -15,13 +15,15 @@ public class Main {
 
         String ip = args[1];
 
+
         if (args[0].equals("V")) {
 
             Veiculo v = new Veiculo(InetAddress.getByName(ip));
             //Veiculo v = new Veiculo();
 
         }else if(args[0].equals("RSU")){
-            RSU rsu = new RSU(InetAddress.getByName(ip));
+            String ip2 = args[2];
+            RSU rsu = new RSU(InetAddress.getByName(ip), InetAddress.getByName(ip2));
 
         }else if(args[0].equals("SV")) {
             Servidor sv = new Servidor();
