@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 public class Packet implements Serializable {
-    //private Integer msgType;//1- info normal | 2- info bulk (segundo int nº pacotes) | 3-....
+    //private Integer msgType;//1- info pos | 2- info esatdo (segundo int nº pacotes) | 3- warning do SV
     //int -> nº pacotes
     private Integer type;//1- info normal | 2- info bulk
     private InetAddress ipaddress;

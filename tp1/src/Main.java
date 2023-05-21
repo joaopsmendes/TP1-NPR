@@ -23,10 +23,10 @@ public class Main {
 
         }else if(args[0].equals("RSU")){
             String ip2 = args[2];
-            RSU rsu = new RSU(InetAddress.getByName(ip), InetAddress.getByName(ip2));
+            RSU rsu = new RSU(InetAddress.getByName(ip), InetAddress.getByName(ip2));//ip server e ip RSU
 
         }else if(args[0].equals("SV")) {
-            Servidor sv = new Servidor();
+            Servidor sv = new Servidor(InetAddress.getByName(ip));//ip RSU
         }
     }
 }
