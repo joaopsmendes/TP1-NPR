@@ -26,7 +26,11 @@ public class Main {
             RSU rsu = new RSU(InetAddress.getByName(ip), InetAddress.getByName(ip2));//ip server e ip RSU
 
         }else if(args[0].equals("SV")) {
-            Servidor sv = new Servidor(InetAddress.getByName(ip));//ip RSU
+            String ip2 = args[2];
+            Servidor sv = new Servidor(InetAddress.getByName(ip), InetAddress.getByName(ip2));//ip RSU e ipServerRemoto
+
+        }else if(args[0].equals("SVR")) {
+            ServidorRemoto sv = new ServidorRemoto();//ip RSU
         }
     }
 }

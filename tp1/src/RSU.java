@@ -22,6 +22,8 @@ public class RSU{
 
     public List<Packet> waringsFromSV;
 
+    //public List<Packet>
+
     public Integer nodeNumber;
     public Double x;
     public Double y;
@@ -90,7 +92,7 @@ public class RSU{
 
                         //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());//debug
 
-                        if(packetsRecebidos.size()==1) {//info de pos
+                        //if(packetsRecebidos.size()==1) {//info de pos
 
                             for (Packet p : packetsRecebidos) {
 
@@ -117,26 +119,22 @@ public class RSU{
                                     }finally {
                                         lockVizinhos.unlock();
                                     }
-                                }else if (p.getType().equals(3)) {//warning para os carros vindo do SV!
+                                }else if (!p.getType().equals(2) && !p.getType().equals(1)) {
 
-                                        lockwarnings.lock();
-                                        try{
-                                            waringsFromSV.add(p);
+                                    //System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
+                                    //warning para os carros vindo do SV! numero sequncial sempre a aumentar!
 
-                                        }finally {
-                                            lockwarnings.unlock();
-                                        }
+                                    lockwarnings.lock();
+                                    try{
+                                        waringsFromSV.add(p);
+
+                                    }finally {
+                                        lockwarnings.unlock();
                                     }
-                                }
+                                }else if (p.getType().equals(2)) {//pacote com info de estado (tipo 2)
 
-                        }else {
-
-                            for (Packet p : packetsRecebidos) {
-
-                                System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
-                                if (p.getIp().equals(nodeNumber)) continue;//check se vem do mesmo!
-
-                                if (p.getType().equals(2)) {//pacote com info de estado (tipo 2)
+                                    //if (p.getIp().equals(nodeNumber)) continue;//check se vem do mesmo!
+                                    //System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
 
                                     lockDB.lock();
                                     try{
@@ -144,11 +142,10 @@ public class RSU{
                                     }finally {
                                         lockDB.unlock();
                                     }
-
-                                    //mudar aqui, ver se o pacote n é repetido!! numero de sequncia? id de pacote unico?
                                 }
                             }
-                        }
+
+                        //}
                         System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
@@ -332,19 +329,10 @@ public class RSU{
             while (true) {
                 long currentTime = System.currentTimeMillis();
 
-                lockVizinhos.lock();
-                try{
-                    neighborsList.removeIf(vi -> currentTime - vi.getUpdateTime() > timeout);
+                neighborsList.removeIf(vi -> currentTime - vi.getUpdateTime() > timeout);
 
-                }finally {
-                    lockVizinhos.unlock();
-                }
                 // sleep for some time
-                try {
-                    Thread.sleep(5000); // run every 5 seconds
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                //Thread.sleep(5000); // run every 5 seconds
             }
         }).start();
     }

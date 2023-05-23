@@ -18,6 +18,13 @@ public class Veiculo {
     final double xRSU = 277.0;
     final double yRSU = 428.0;
 
+    final double xRSU2 = 983.0;
+    final double yRSU2 = 457.0;
+
+
+
+
+
     public double x;
     public double y;
 
@@ -36,6 +43,7 @@ public class Veiculo {
     public List<VehicleInfo> neighborList;
 
     public List<Packet> warningsFromSv;
+    public List<Integer> warningsRecebidos;
 
     int timeout;
 
@@ -63,6 +71,7 @@ public class Veiculo {
         this.neighborList = new ArrayList<>();
 
         this.warningsFromSv = new ArrayList<>();
+        this.warningsRecebidos = new ArrayList<>();
 
 
         this.timeout = 10000;//timeout para atualizar neighbor table!
@@ -85,85 +94,85 @@ public class Veiculo {
 
                         if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());//debug
 
-                        if(packetsRecebidos.size()==1) {//info de pos
+                        //if(packetsRecebidos.size()==1) {//info de pos
 
-                            for (Packet p : packetsRecebidos) {
+                        for (Packet p : packetsRecebidos) {
 
-                                if (p.getType().equals(1)) {//pacote com info de posição (tipo 1) packetsRecebidos.get(packetsRecebidos.size()-1).getType().equals(1)
-
-                                    if (p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
-                                    System.out.println("→ Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
-
-                                    double tempX = p.getCoordX();
-                                    double tempY = p.getCoordY();
-
-                                    lockVizinhos.lock();
-                                    try{
-                                        //ver se o vizinho ja se encontra na tabela!
-                                        int flag =0;
-                                        for(VehicleInfo neighborInfo : neighborList){
-                                            if(neighborInfo.getNodeNumber().equals(p.getIp())){
-                                                flag = 1;
-                                                break;
-                                            }
-                                        }
-
-                                        if(flag==0) {
-                                            neighborList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
-                                            System.out.println("VEICULO: Nodo " + p.getIp() + " adicionado à tabela de vizinhos! ✓ \n");
-                                        }else{
-                                            System.out.println("VEICULO: Nodo " + p.getIp() + " já se encontra na tabela de vizinhos! ✓ \n");
-                                        }
-
-
-                                    }finally {
-                                        lockVizinhos.unlock();
-                                    }
-                                } else if (p.getType().equals(3)) {
-
-                                    if(p.getIp().equals(vehicleNodeNumber)){//quer dizer que a msg é para este carro!
-
-                                        String piso = null;// 0->seco | 1->chuva | 2->neve | 3->gelo
-                                        if(p.getEstadoPiso()==0) piso="Seco";
-                                        else if(p.getEstadoPiso()==1) piso="Chuva";
-                                        else if(p.getEstadoPiso()==2) piso="Neve";
-                                        else if (p.getEstadoPiso()==3) piso="Gelo";
-
-                                        System.out.println("⚠ WARNING recebido ⚠ : Vai em excesso de velocidade! | Velocidade Max: "+ p.getVelocidade() + "| Estado do Piso: "+ piso +"\n");
-                                    }else if(Packet.checkDistance(x,y,p.getCoordX(),p.getCoordY())<100){//mensagem sobre outro veiculo!
-
-                                        System.out.println("⚠ WARNING recebido ⚠ : O veiculo "+ p.getIp()+ " vai em excesso de velocidade perto da sua área!\n" );
-
-                                    }else{
-                                        lockWarnings.lock();
-                                        try{
-                                            warningsFromSv.add(p);
-
-                                        }finally {
-                                            lockWarnings.unlock();
-                                        }
-                                    }
-                                }
-                            }
-                        }else {
-
-                            for (Packet p : packetsRecebidos) {
+                            if (p.getType().equals(1)) {//pacote com info de posição (tipo 1) packetsRecebidos.get(packetsRecebidos.size()-1).getType().equals(1)
 
                                 if (p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
-                                System.out.println("→ Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
+                                System.out.println("→ Pacote Recebido: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                //System.out.println("→ Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
 
+                                double tempX = p.getCoordX();
+                                double tempY = p.getCoordY();
 
-                                if (p.getType().equals(2)) {//pacote com info de estado (tipo 2)
-
-                                    lockDB.lock();
-                                    try{
-                                        DBlist.add(p);
-                                    }finally {
-                                        lockDB.unlock();
+                                lockVizinhos.lock();
+                                try{
+                                    //ver se o vizinho ja se encontra na tabela!
+                                    int flag =0;
+                                    for(VehicleInfo neighborInfo : neighborList){
+                                        if(neighborInfo.getNodeNumber().equals(p.getIp())){
+                                            flag = 1;
+                                            break;
+                                        }
                                     }
+
+                                    if(flag==0) {
+                                        neighborList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
+                                        System.out.println("VEICULO: Nodo " + p.getIp() + " adicionado à tabela de vizinhos! ✓ \n");
+                                    }else{
+                                        System.out.println("VEICULO: Nodo " + p.getIp() + " já se encontra na tabela de vizinhos! ✓ \n");
+                                    }
+
+
+                                }finally {
+                                    lockVizinhos.unlock();
                                 }
+                            } else if (!p.getType().equals(2) && !p.getType().equals(1) && !warningsRecebidos.contains(p.getType())) {//não é tipo 1 nem 2, quer dizer que é warning (numeros sequencial sempre a aumentar)
+
+                                if(p.getIp().equals(vehicleNodeNumber)){//quer dizer que a msg é para este carro!
+
+                                    warningsRecebidos.add( p.getType() );//adcionar numero do warning a tabela
+
+                                    String piso = null;// 0->seco | 1->chuva | 2->neve | 3->gelo
+                                    if(p.getEstadoPiso()==0) piso="Seco";
+                                    else if(p.getEstadoPiso()==1) piso="Chuva";
+                                    else if(p.getEstadoPiso()==2) piso="Neve";
+                                    else if (p.getEstadoPiso()==3) piso="Gelo";
+
+                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : Vai em excesso de velocidade! | Velocidade Max: "+ p.getVelocidade() + "| Estado do Piso: "+ piso +"\n");
+                                }else if(Packet.checkDistance(x,y,p.getCoordX(),p.getCoordY())<100){//mensagem sobre outro veiculo!
+
+                                    warningsRecebidos.add( p.getType() );//adcionar numero do warning a tabela
+
+                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : O veiculo "+ p.getIp()+ " vai em excesso de velocidade perto da sua área!\n" );
+
+                                }
+                                lockWarnings.lock();
+                                try{
+                                    warningsFromSv.add(p);
+
+                                }finally {
+                                    lockWarnings.unlock();
+                                }
+
+
+                            }else if(p.getType().equals(2)){
+
+                                if (p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
+                                System.out.println("→ Pacote Recebido: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+
+                                lockDB.lock();
+                                try{
+                                    DBlist.add(p);
+                                }finally {
+                                    lockDB.unlock();
+                                }
+
                             }
                         }
+                        //}
                         //System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
@@ -241,17 +250,22 @@ public class Veiculo {
         }).start();
 
 
-        new Thread(() -> { // enviar msg info de estado -> direcionada! GREEDY FORWARDING
+        new Thread(() -> { // enviar msg info de estado -> direcionada ao RSU (bulk)! GREEDY FORWARDING
             try {
                 while (true) {
 
                     if(!neighborList.isEmpty()){
                         //System.out.println("Thread de info de estado ikoqhbnuqbfuqbfu");
+                        double distanceRsu1 = Packet.checkDistance(x, y, xRSU, yRSU);
+                        double distanceRsu2 = Packet.checkDistance(x, y, xRSU2, yRSU2);
+
+                        double menorDistance = Math.min(distanceRsu1, distanceRsu2);
                         
-                        double menorDistance = Packet.checkDistance(x,y,xRSU,yRSU);//distancia do proprio ao RSU
+                        //double menorDistance = Packet.checkDistance(x,y,xRSU,yRSU);//distancia do proprio ao RSU
                         InetAddress nodoDestinoIP = null;
                         int nodoDestino = 0;
                         int flagD = 0;
+                        int rsuDestino = 0;
 
                         lockVizinhos.lock();
                         try{
@@ -261,10 +275,22 @@ public class Veiculo {
                                     //envia para ele
                                     nodoDestinoIP = Vinfo.getCarIP();
                                     nodoDestino = Vinfo.getNodeNumber();
+                                    rsuDestino = 1;
                                     break;
 
-                                } else { //rsu nao ta na lista
-                                    double distanciaAux = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), xRSU, yRSU);
+                                }else if(Vinfo.getX() == xRSU2 && Vinfo.getY() == yRSU2){
+
+                                    nodoDestinoIP = Vinfo.getCarIP();
+                                    nodoDestino = Vinfo.getNodeNumber();
+                                    rsuDestino = 2;
+                                    break;
+
+                                }else { //rsu nao ta na lista
+                                    double distanciaRsu1 = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), xRSU, yRSU);
+                                    double distanciaRsu2 = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), xRSU2, yRSU2);
+
+                                    double distanciaAux = Math.min(distanciaRsu1, distanciaRsu2);
+
                                     if (distanciaAux < menorDistance) {
                                         menorDistance = distanciaAux;
                                         nodoDestinoIP = Vinfo.getCarIP();
@@ -300,7 +326,7 @@ public class Veiculo {
                             byte[] d = Packet.createPacketArray(listaPackets);
                             DatagramPacket pack = new DatagramPacket(d, d.length, nodoDestinoIP, 4321);
                             socketEnviar.send(pack);
-                            System.out.println("VEICULO: Info de ESTADO enviada para " + nodoDestino+ " IP: " + nodoDestinoIP +"\n");
+                            System.out.println("VEICULO: Info de ESTADO enviada para " + nodoDestino+ " RSU destino: " + rsuDestino +"\n");
 
                         }
 
@@ -309,7 +335,7 @@ public class Veiculo {
                     }else{
                         System.out.println("debug: tabela vizinhos vazia!");
                     }
-                    Thread.sleep(5000);
+                    Thread.sleep(10000);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -318,7 +344,7 @@ public class Veiculo {
             }
         }).start();
 
-        new Thread(() -> { // WARNINGS: enviar msg info do servidor -> para veiculos numa area!
+        new Thread(() -> { // WARNINGS: enviar msg info do servidor -> para veiculos numa area! mensagens individuais
             try {
                 while (true) {
 
@@ -333,6 +359,9 @@ public class Veiculo {
                             int flagE = 0;
 
                             for(VehicleInfo Vinfo : neighborList) {
+
+                                if((Vinfo.getX()==xRSU && Vinfo.getY()==yRSU) || (Vinfo.getX()==xRSU2 && Vinfo.getY()==yRSU2)) continue;// se for rsu nao enviar
+
                                 if(Packet.checkDistance(Vinfo.getX(),Vinfo.getY(),pWarning.getCoordX(),pWarning.getCoordY())<100){ //na area do veiculo em execesso de velocidade!
 
                                     List<Packet> listaPacketsInRange = new ArrayList<>();
@@ -344,8 +373,7 @@ public class Veiculo {
 
                                     flagE=1;
 
-
-                                } else { //rsu nao ta na lista
+                                }else { //rsu nao ta na lista
                                     double distanciaAux = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), pWarning.getCoordX(), pWarning.getCoordY());
                                     if (distanciaAux < menorDistance) {
                                         menorDistance = distanciaAux;
@@ -388,20 +416,16 @@ public class Veiculo {
             while (true) {
                 long currentTime = System.currentTimeMillis();
 
-                lockVizinhos.lock();
-                try{
+                //lockVizinhos.lock();
+                //try{
 
                     neighborList.removeIf(vi -> currentTime - vi.getUpdateTime() > timeout);
 
-                }finally {
-                    lockVizinhos.unlock();
-                }
+                //}finally {
+                    //lockVizinhos.unlock();
+                //}
                 // sleep for some time
-                try {
-                    Thread.sleep(5000); // run every 5 seconds
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                //Thread.sleep(5000); // run every 5 seconds
             }
         }).start();
     }

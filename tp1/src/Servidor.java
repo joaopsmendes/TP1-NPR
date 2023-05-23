@@ -17,6 +17,7 @@ public class Servidor{
 
     public List<Packet> SVdatabase;
 
+    public List<Packet> dadosParaServer;
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
@@ -24,12 +25,18 @@ public class Servidor{
 
     private InetAddress ip;
 
+    public Integer packetCount;
+
     ReentrantLock lockDB;
 
-    public Servidor(InetAddress ipRsu) throws IOException{
+    ReentrantLock lockdadosParaServer;
+
+    public Servidor(InetAddress ipRsu, InetAddress ipServerRemoto) throws IOException{
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
+
+        this.packetCount = 3;
 
         //this.databaseSV = new HashMap<>();
 
@@ -37,12 +44,15 @@ public class Servidor{
 
         this.veiculosEmRange = new ArrayList<>();
 
+        this.dadosParaServer = new ArrayList<>();
+
         this.lockDB = new ReentrantLock();
 
+        this.lockdadosParaServer = new ReentrantLock();
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
-                    Thread.sleep(1000);
+                    //Thread.sleep(1000);
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
                     DatagramPacket arrayRecebido = new DatagramPacket(bufferr, bufferr.length);
@@ -53,7 +63,12 @@ public class Servidor{
                         byte[] receivedData = Arrays.copyOfRange(arrayRecebido.getData(), arrayRecebido.getOffset(), arrayRecebido.getLength());
                         List<Packet> packetsRecebidos = Packet.extractPackets(receivedData);
 
-                        //if(debug) System.out.println(">Bytes recebidos: " + Arrays.toString(receivedData) + " Recebido de: "+ arrayRecebido.getAddress());
+                        lockdadosParaServer.lock();
+                        try{
+                            dadosParaServer.addAll(packetsRecebidos);
+                        }finally {
+                            lockdadosParaServer.unlock();
+                        }
 
                         for (Packet p : packetsRecebidos) {
 
@@ -95,7 +110,7 @@ public class Servidor{
             try {
                 while(true) {
                     //pacote:
-                    //msg Type-> 3 !
+                    //msg Type-> 3++ ! identificador do pacote (numero sequncial sempre a aumentar)
                     //inetAddress -> null
                     //ip-> nodo que vai em execesso de velocidade
                     //coordX -> raio à volta do carro em causa, enviar msg para veiculos nessa area
@@ -114,7 +129,6 @@ public class Servidor{
                             int piso = p.getEstadoPiso();// 0->seco | 1->chuva | 2->neve | 3->gelo
 
 
-
                             if(p.getCoordX()<220){//velocidade max: 50km/h
                                 veloMax = 50;
 
@@ -128,7 +142,7 @@ public class Servidor{
 
                             if(p.getVelocidade()>veloMax){
 
-                                Packet Psend = new Packet(3, null,nodoSujeito,p.getCoordX(),p.getCoordY(),piso,veloMax);
+                                Packet Psend = new Packet(packetCount++, null,nodoSujeito,p.getCoordX(),p.getCoordY(),piso,veloMax);
                                 byte[] datab = Packet.createPacketArray(Lpacotes);
                                 DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipRsu,4321);
                                 socketEnviar.send(requestb);
@@ -147,6 +161,34 @@ public class Servidor{
                     }
 
                     //Thread.sleep(10000);//10s
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> { // enviar info para o servidor remoto!
+            try {
+                while(true) {
+
+                    if(!dadosParaServer.isEmpty()){
+
+                        ArrayList<Packet> pacotesParaServer = new ArrayList<>(dadosParaServer);
+                        byte[] dataForServer = Packet.createPacketArray(pacotesParaServer);
+                        DatagramPacket sendData = new DatagramPacket(dataForServer,dataForServer.length,ipServerRemoto,4321);
+                        socketEnviar.send(sendData);
+
+                        System.out.println("SV: Dados enviados ao Servidor da Cloud-Remota !");
+
+                        lockdadosParaServer.lock();
+                        try{
+                            //Lpacotes.addAll(SVdatabase);
+                            dadosParaServer.clear();
+                        }finally {
+                            lockdadosParaServer.unlock();
+                        }
+                    }
                 }
 
             } catch (IOException e) {
