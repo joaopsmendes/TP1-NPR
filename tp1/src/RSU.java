@@ -15,7 +15,7 @@ public class RSU{
     private DatagramSocket socketEnviar;
     private DatagramSocket socketReceber;
 
-    public Map<Integer, ArrayList<Packet>> databaseRSU;
+    //public Map<Integer, ArrayList<Packet>> databaseRSU;
 
     public List<VehicleInfo> neighborsList;
     public List<Packet> listDatabaseRSU;
@@ -38,17 +38,21 @@ public class RSU{
 
     ReentrantLock lockwarnings;
 
+    MulticastSocket socketEnviarMulticast;
+
 
     public RSU(InetAddress ipserver,InetAddress iprsu) throws IOException {
 
         this.socketEnviar = new DatagramSocket(4000);
         this.socketReceber = new DatagramSocket(4321);
 
-        this.databaseRSU = new HashMap<>();
+        //this.databaseRSU = new HashMap<>();
 
         this.neighborsList = new ArrayList<>();
 
         this.listDatabaseRSU = new ArrayList<>();
+
+        this.waringsFromSV = new ArrayList<>();
 
         this.timeout = 1000;
 
@@ -56,6 +60,8 @@ public class RSU{
         this.lockVizinhos = new ReentrantLock();
 
         this.lockwarnings = new ReentrantLock();
+
+        this.socketEnviarMulticast = new MulticastSocket();
 
 
 
@@ -77,7 +83,7 @@ public class RSU{
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
-                    Thread.sleep(1000);
+                    Thread.sleep(200);
                     //System.out.println("Veiculo " + ipAddress + " ON!\n");
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
@@ -97,7 +103,7 @@ public class RSU{
                             for (Packet p : packetsRecebidos) {
 
                                 if (p.getIp().equals(nodeNumber)) continue;//check se vem do mesmo!
-                                System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
+                                //System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
 
                                 if (p.getType().equals(1)) {//pacote com info de posição (tipo 1) packetsRecebidos.get(packetsRecebidos.size()-1).getType().equals(1)
 
@@ -108,17 +114,31 @@ public class RSU{
                                     try{
 
                                         int flag =0;//se 1 ja existe na tabela!
-                                        for(VehicleInfo neighborInfo : neighborsList){
-                                            if(neighborInfo.getNodeNumber().equals(p.getIp())){
-                                                flag = 1;
-                                                break;
+
+                                        if(!neighborsList.isEmpty()){
+
+                                            for(VehicleInfo neighborInfo : neighborsList){
+                                                if(neighborInfo.getNodeNumber().equals(p.getIp()) && neighborInfo.getX()==p.getCoordX() && neighborInfo.getY()==p.getCoordY()){
+                                                    flag = 1;
+                                                    break;
+                                                }else if(neighborInfo.getNodeNumber().equals(p.getIp())){
+
+                                                    neighborsList.remove(neighborInfo);
+                                                }
                                             }
                                         }
-                                        if(flag==0) neighborsList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
-                                        System.out.println("RSU: Nodo " + p.getIp() + "adicionado à tabela de vizinhos!\n");
+
+                                        if(flag==0){
+                                            neighborsList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
+                                            System.out.println("RSU: Nodo " + p.getIp() + "adicionado/atualizado na tabela de vizinhos! → Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]\n");
+                                        }else{
+                                            //System.out.println("RSU: Nodo " + p.getIp() + " já se encontra na tabela de vizinhos! ✓ → Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]\n");
+                                        }
+
                                     }finally {
                                         lockVizinhos.unlock();
                                     }
+
                                 }else if (!p.getType().equals(2) && !p.getType().equals(1)) {
 
                                     //System.out.println("→ Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|" + p.getIpaddress()+ "|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
@@ -127,6 +147,9 @@ public class RSU{
                                     lockwarnings.lock();
                                     try{
                                         waringsFromSV.add(p);
+                                        System.out.println("-------------------------Warning recebido---------------------");
+                                        System.out.println("RSU: ⚠  Warning " + p.getType() + " guardado para envio aos veiculos! ✓ → Pacote Recebido: [" + p.getType()+  "|" + p.getIp() + "|"  + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
+                                        System.out.println("--------------------------------------------------------------\n");
 
                                     }finally {
                                         lockwarnings.unlock();
@@ -138,7 +161,11 @@ public class RSU{
 
                                     lockDB.lock();
                                     try{
+                                        this.listDatabaseRSU.removeIf(pjanalista -> pjanalista.getIp().equals(p.getIp()));
                                         listDatabaseRSU.add(p);
+                                        System.out.println("--------------------------CAM recebida------------------------");
+                                        System.out.println("RSU: CAM do nodo " +p.getIp()+ " guardada para envio ao SV! ✓  → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                        System.out.println("--------------------------------------------------------------\n");
                                     }finally {
                                         lockDB.unlock();
                                     }
@@ -146,7 +173,7 @@ public class RSU{
                             }
 
                         //}
-                        System.out.println();
+                        //System.out.println();
                     }catch (Exception e) {
                         //System.out.println("depois de ");
                         e.printStackTrace();
@@ -186,9 +213,19 @@ public class RSU{
                         }
                         System.out.println("RSU: Dados enviados ao servidor !");
 
+                        lockDB.lock();
+
+                        try{
+                            listDatabaseRSU.clear();
+                            System.out.println("------CAM Database cleared ✓\n");
+
+                        }finally {
+                            lockDB.unlock();
+                        }
+
                     }
 
-                    Thread.sleep(10000);//10s
+                    Thread.sleep(150);//10s
                 }
 
             } catch (IOException e) {
@@ -206,10 +243,12 @@ public class RSU{
                     Path currentPath = Paths.get("").toAbsolutePath();
                     Path targetPath = currentPath.getParent().getParent().getParent();
                     String directoryName = targetPath.getFileName().toString();
-                    String vehicle_nID = directoryName.substring(0, Math.min(directoryName.length(), 3));
+                    String vehicle_nID = directoryName.substring(0, Math.min(directoryName.length(), 2));
 
-                    String vehicleIDint = directoryName.substring(1, Math.min(directoryName.length(), 3));
+                    String vehicleIDint = directoryName.substring(1, Math.min(directoryName.length(), 2));// RSU só tem um numero de nodo
                     nodeNumber = Integer.parseInt(vehicleIDint);
+
+                    String fileStatus;
 
                     // Read the file with the prefix in the parent directory
                     // Read the coordinates from the file
@@ -221,15 +260,24 @@ public class RSU{
                         x = Double.parseDouble(tokens[0]);
                         y = Double.parseDouble(tokens[1]);
 
-                        System.out.println(vehicle_nID + ".xy lido ✓ ("+x+","+y+")");
+                        //System.out.println(vehicle_nID + ".xy lido ✓ ("+x+","+y+")");
+                        fileStatus = " "+vehicle_nID + ".xy lido ✓ ("+x+","+y+")";
 
                     } catch (IOException e) {
-                        System.out.println("ERRO: ficheiro .xy não foi lido!");
+                        //System.out.println("ERRO: ficheiro .xy não foi lido!");
+                        fileStatus = "ERRO: ficheiro .xy não foi lido!";
                     }
 
+                    String interfaceName = "eth2"; // Specify the desired network interface name
+                    NetworkInterface networkInterface = NetworkInterface.getByName(interfaceName);
+
+                    socketEnviarMulticast.setNetworkInterface(networkInterface);
+
+                    InetAddress multicastGroup = InetAddress.getByName("ff02::1");
+
                     // create the broadcast address
-                    socketEnviar.setBroadcast(true);
-                    InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
+                    //socketEnviar.setBroadcast(true);
+                    //InetAddress broadcastAddr = InetAddress.getByName("ff02::1");//multicast addr
 
                     //enviar apenas a info propria !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!| INFO PROPRIA |!!!!!!!!!!!!!
                     List<Packet> Lpacotes = new ArrayList<>();
@@ -239,12 +287,12 @@ public class RSU{
                     byte[] datab = Packet.createPacketArray(Lpacotes);
 
                     //tipo 2
-                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,broadcastAddr,4321);
-                    socketEnviar.send(requestb);
+                    DatagramPacket requestb = new DatagramPacket(datab,datab.length,multicastGroup,4321);
+                    socketEnviarMulticast.send(requestb);
 
-                    System.out.println("RSU: Posição enviada para o grupo Multicast !");
+                    //System.out.println("RSU: Posição enviada para o grupo Multicast !");
                     for(Packet p : Lpacotes){
-                        System.out.println("← Pacote Enviado: [$ "+p.getIp()+" $|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                        System.out.println(fileStatus+ "\nRSU: Posição enviada para o grupo Multicast ! ← Pacote Enviado: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
                     }
 
                     Thread.sleep(5000);//5s
@@ -271,6 +319,8 @@ public class RSU{
 
                             int flagE = 0;
 
+                            int flagVznhAreaInteressejaRecebeu = 0;
+
                             for(VehicleInfo Vinfo : neighborsList) {
                                 if(Packet.checkDistance(Vinfo.getX(),Vinfo.getY(),pWarning.getCoordX(),pWarning.getCoordY())<100){ //na area do veiculo em execesso de velocidade!
 
@@ -279,30 +329,36 @@ public class RSU{
                                     byte[] d = Packet.createPacketArray(listaPacketsInRange);
                                     DatagramPacket pack = new DatagramPacket(d, d.length, Vinfo.getCarIP(), 4321);
                                     socketEnviar.send(pack);
-                                    System.out.println("RSU: Warning enviado para " + Vinfo.getNodeNumber());
+                                    System.out.println("--------------------Warning enviado (area de interesse)--------------------");
+                                    System.out.println("RSU: Warning " + pWarning.getType() +" enviado para " + Vinfo.getNodeNumber()+"! IPv6:" + Vinfo.getCarIP());
+                                    System.out.println("------------------------------------------------------------------------\n");
 
-                                    flagE=1;
+                                    flagVznhAreaInteressejaRecebeu=1;
 
 
-                                } else { //rsu nao ta na lista
+                                } else {
                                     double distanciaAux = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), pWarning.getCoordX(), pWarning.getCoordY());
                                     if (distanciaAux < menorDistance) {
                                         menorDistance = distanciaAux;
                                         nodoDestinoIP = Vinfo.getCarIP();
                                         nodoDestino = Vinfo.getNodeNumber();
 
+                                        flagE=1;
+
                                     }
                                 }
                             }
-                            if(flagE!=1){//caso nenhum vizinho estiver a menos de 100 m enviar para o mais proximo do "nodo em execesso de velocidade"
+                            if(flagE==1 && flagVznhAreaInteressejaRecebeu ==0){//caso nenhum vizinho estiver a menos de 100 m enviar para o mais proximo do "nodo em execesso de velocidade"
 
                                 List<Packet> listaPackets = new ArrayList<>();
                                 listaPackets.add(pWarning);
 
                                 byte[] d = Packet.createPacketArray(listaPackets);
-                                DatagramPacket pack = new DatagramPacket(d, d.length, nodoDestinoIP, 4321);
-                                socketEnviar.send(pack);
-                                System.out.println("RSU: warning enviado para " + nodoDestino);
+                                DatagramPacket packd = new DatagramPacket(d, d.length, nodoDestinoIP, 4321);
+                                socketEnviar.send(packd);
+                                System.out.println("--------------Warning enviado (veiculo proximo da area)--------------");
+                                System.out.println("RSU: warning " +pWarning.getType() +" enviado para " + nodoDestino+"!");
+                                System.out.println("--------------------------------------------------------------------\n");
 
                             }
                         }
@@ -311,15 +367,18 @@ public class RSU{
                             //warningsFromSv.addAll(DBlist);
                             //listaPackets = new ArrayList<>(DBlist);//adiconar tudo da data base! para ser encaminhado pelos nodos até ao RSU
                             waringsFromSV.clear();//limpar a Data Base depois de enviar!
-                            System.out.println("Warnings Database cleared ✓");
+                            System.out.println("------Warnings Database cleared ✓\n");
                         }finally {
                             lockwarnings.unlock();
                         }
                     }
+                    Thread.sleep(100);
 
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
 

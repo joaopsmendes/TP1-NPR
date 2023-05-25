@@ -79,7 +79,7 @@ public class Veiculo {
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
-                    Thread.sleep(1000);
+                    Thread.sleep(200);
                     //System.out.println("Veiculo " + ipAddress + " ON!\n");
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
@@ -101,7 +101,7 @@ public class Veiculo {
                             if (p.getType().equals(1)) {//pacote com info de posição (tipo 1) packetsRecebidos.get(packetsRecebidos.size()-1).getType().equals(1)
 
                                 if (p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
-                                System.out.println("→ Pacote Recebido: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                //System.out.println("→ Pacote Recebido: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
                                 //System.out.println("→ Pacote Recebido: [$ " + p.getIp() + " $|" + p.getVelocidade() + "|" + p.getEstadoPiso() + "|" + p.getCoordX() + "|" + p.getCoordY() + "]");
 
                                 double tempX = p.getCoordX();
@@ -111,18 +111,26 @@ public class Veiculo {
                                 try{
                                     //ver se o vizinho ja se encontra na tabela!
                                     int flag =0;
-                                    for(VehicleInfo neighborInfo : neighborList){
-                                        if(neighborInfo.getNodeNumber().equals(p.getIp())){
-                                            flag = 1;
-                                            break;
+                                    //VehicleInfo aux ;
+                                    if(!neighborList.isEmpty()){
+
+                                        for(VehicleInfo neighborInfo : neighborList){
+                                            if(neighborInfo.getNodeNumber().equals(p.getIp()) && neighborInfo.getX()==p.getCoordX() && neighborInfo.getY()==p.getCoordY()){//se for o msm node com as mesmas coods não adiciona!
+                                                flag = 1;//nodo está na msm pos , nao adicionar
+                                                break;
+                                            }else if(neighborInfo.getNodeNumber().equals(p.getIp())){
+
+                                                neighborList.remove(neighborInfo);
+                                            }
                                         }
                                     }
 
                                     if(flag==0) {
+
                                         neighborList.add(new VehicleInfo(p.getIp(),tempX , tempY, System.currentTimeMillis(), p.getIpaddress()));
-                                        System.out.println("VEICULO: Nodo " + p.getIp() + " adicionado à tabela de vizinhos! ✓ \n");
+                                        System.out.println("VEICULO: Nodo " + p.getIp() + " adicionado/atualizado na tabela de vizinhos! ✓  → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
                                     }else{
-                                        System.out.println("VEICULO: Nodo " + p.getIp() + " já se encontra na tabela de vizinhos! ✓ \n");
+                                        //System.out.println("VEICULO: Nodo " + p.getIp() + " já se encontra na tabela de vizinhos! ✓  → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]\n");
                                     }
 
 
@@ -141,13 +149,18 @@ public class Veiculo {
                                     else if(p.getEstadoPiso()==2) piso="Neve";
                                     else if (p.getEstadoPiso()==3) piso="Gelo";
 
-                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : Vai em excesso de velocidade! | Velocidade Max: "+ p.getVelocidade() + "| Estado do Piso: "+ piso +"\n");
+
+                                    //System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : Vai em excesso de velocidade! | Velocidade Max: "+ p.getVelocidade() + "| Estado do Piso: "+ piso +"\n");
+                                    System.out.println("-------------------------Warning recebido-------------------------------------------------------------------");
+                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : Vai em excesso de velocidade! | Velocidade Max: "+ p.getVelocidade() + "| Estado do Piso: "+ piso +" → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                    System.out.println("---------------------------------------------------------------------------------------------------------\n");
                                 }else if(Packet.checkDistance(x,y,p.getCoordX(),p.getCoordY())<100){//mensagem sobre outro veiculo!
 
                                     warningsRecebidos.add( p.getType() );//adcionar numero do warning a tabela
 
-                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : O veiculo "+ p.getIp()+ " vai em excesso de velocidade perto da sua área!\n" );
-
+                                    System.out.println("-------------------------Warning recebido-----------------------------------------------------------------");
+                                    System.out.println("⚠ WARNING " + p.getType() + " recebido ⚠ : O veiculo "+ p.getIp()+ " vai em excesso de velocidade perto da sua área! → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]" );
+                                    System.out.println("----------------------------------------------------------------------------------------------------------\n");
                                 }
                                 lockWarnings.lock();
                                 try{
@@ -161,10 +174,13 @@ public class Veiculo {
                             }else if(p.getType().equals(2)){
 
                                 if (p.getIp().equals(vehicleNodeNumber)) continue;//check se vem do mesmo!
-                                System.out.println("→ Pacote Recebido: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-
+                                System.out.println("---------------------CAM recebida-----------------------------------------");
+                                System.out.println("VEICULO: msg CAM do nodo "+p.getIp() +" guardada para envio ao RSU! ✓  → Pacote Recebido: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                                System.out.println("-------------------------------------------------------------------------\n");
                                 lockDB.lock();
                                 try{
+
+                                    this.DBlist.removeIf(pjanalista -> pjanalista.getIp().equals(p.getIp()));
                                     DBlist.add(p);
                                 }finally {
                                     lockDB.unlock();
@@ -199,6 +215,8 @@ public class Veiculo {
                     String vehicleIDint = directoryName.substring(1, Math.min(directoryName.length(), 3));
                     vehicleNodeNumber = Integer.parseInt(vehicleIDint);
 
+                    String fileReadStatus = "";
+
                     // Read the file with the prefix in the parent directory
                     // Read the coordinates from the file
                     Path filePath = targetPath.getParent().resolve(vehicle_nID + ".xy");
@@ -209,11 +227,16 @@ public class Veiculo {
                         x = Double.parseDouble(tokens[0]);
                         y = Double.parseDouble(tokens[1]);
 
-                        System.out.println(vehicle_nID + ".xy Lido ✓  ("+x+","+y+")");
+                        //System.out.println(vehicle_nID + ".xy Lido ✓  ("+x+","+y+")\n");
+                        fileReadStatus = " " + vehicle_nID + ".xy Lido ✓  ("+x+","+y+")";
 
                     } catch (IOException e) {
-                        System.out.println("ERRO: ficheiro .xy não foi lido!");
+                        //System.out.println("ERRO: ficheiro .xy não foi lido!");
+                        fileReadStatus = "ERRO: ficheiro .xy não foi lido!";
                     }
+
+                     // Multicast address
+                    //int port = 12345;
 
                     // create the broadcast address
                     socketEnviar.setBroadcast(true);
@@ -234,12 +257,12 @@ public class Veiculo {
 
                     socketEnviar.send(requestb);
 
-                    System.out.println("VEICULO: Posição enviada para o grupo Multicast !\n");
+                    //System.out.print("VEICULO: Posição enviada para o grupo Multicast !\n");
                     for(Packet p : Lpacotes){
-                        System.out.println("← Pacote Enviado: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                        System.out.println(fileReadStatus + "\nVEICULO (vizinhança): Posição enviada para o grupo Multicast! ← Pacote Enviado: [ "+ p.getType() + "|" +p.getIp()+ "|" +p.getCoordX()+"|"+p.getCoordY()+"]\n");
                     }
 
-                    Thread.sleep(5000);//5s
+                    Thread.sleep(1000);//5s
                 }
 
             } catch (IOException e) {
@@ -276,6 +299,7 @@ public class Veiculo {
                                     nodoDestinoIP = Vinfo.getCarIP();
                                     nodoDestino = Vinfo.getNodeNumber();
                                     rsuDestino = 1;
+                                    flagD=1;
                                     break;
 
                                 }else if(Vinfo.getX() == xRSU2 && Vinfo.getY() == yRSU2){
@@ -283,13 +307,22 @@ public class Veiculo {
                                     nodoDestinoIP = Vinfo.getCarIP();
                                     nodoDestino = Vinfo.getNodeNumber();
                                     rsuDestino = 2;
+                                    flagD=1;
                                     break;
 
                                 }else { //rsu nao ta na lista
                                     double distanciaRsu1 = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), xRSU, yRSU);
                                     double distanciaRsu2 = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), xRSU2, yRSU2);
 
-                                    double distanciaAux = Math.min(distanciaRsu1, distanciaRsu2);
+                                    double distanciaAux = 0;
+
+                                    if(distanciaRsu1 < distanciaRsu2){
+                                        distanciaAux = distanciaRsu1;
+                                        rsuDestino = 1;
+                                    }else{
+                                        distanciaAux = distanciaRsu2;
+                                        rsuDestino = 2;
+                                    }
 
                                     if (distanciaAux < menorDistance) {
                                         menorDistance = distanciaAux;
@@ -311,12 +344,14 @@ public class Veiculo {
                             Packet p = new Packet(2,ip, vehicleNodeNumber ,x, y, Packet.getRandomEstadoPiso(), Packet.getRandomVelocidade());
                             if(!DBlist.isEmpty()){
 
+                                //System.out.println("");
+
                                 lockDB.lock();
                                 try{
                                     listaPackets.addAll(DBlist);
                                     //listaPackets = new ArrayList<>(DBlist);//adiconar tudo da data base! para ser encaminhado pelos nodos até ao RSU
                                     DBlist.clear();//limpar a Data Base depois de enviar!
-                                    System.out.println("Database cleared ✓");
+                                    System.out.println("------Database cleared ✓");
                                 }finally {
                                     lockDB.unlock();
                                 }
@@ -326,8 +361,9 @@ public class Veiculo {
                             byte[] d = Packet.createPacketArray(listaPackets);
                             DatagramPacket pack = new DatagramPacket(d, d.length, nodoDestinoIP, 4321);
                             socketEnviar.send(pack);
-                            System.out.println("VEICULO: Info de ESTADO enviada para " + nodoDestino+ " RSU destino: " + rsuDestino +"\n");
-
+                            System.out.println("----------------------CAM enviada------------------------------------");
+                            System.out.println("VEICULO (CAM): Info de ESTADO enviada para nodo " + nodoDestino+ "| RSU destino: " + rsuDestino +"! ← Pacote Enviado: [ "+ p.getType() + "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+                            System.out.println("-------------------------------------------------------------------\n");
                         }
 
 
@@ -357,6 +393,7 @@ public class Veiculo {
                             int nodoDestino = 0;
 
                             int flagE = 0;
+                            int flagVizinhoNaAreaDeInteresseJaRecebeu = 0;
 
                             for(VehicleInfo Vinfo : neighborList) {
 
@@ -369,9 +406,11 @@ public class Veiculo {
                                     byte[] d = Packet.createPacketArray(listaPacketsInRange);
                                     DatagramPacket pack = new DatagramPacket(d, d.length, Vinfo.getCarIP(), 4321);
                                     socketEnviar.send(pack);
-                                    System.out.println("VEICULO: Warning enviado para " + Vinfo.getNodeNumber()+" (na área de interesse) \n");
+                                    System.out.println("------------------------Warning enviado--------------------------------------");
+                                    System.out.println("VEICULO: Warning " + pWarning.getType() + " enviado para " + Vinfo.getNodeNumber()+" (na área de interesse)");
+                                    System.out.println("-----------------------------------------------------------------------------\n");
 
-                                    flagE=1;
+                                    flagVizinhoNaAreaDeInteresseJaRecebeu=1;
 
                                 }else { //rsu nao ta na lista
                                     double distanciaAux = Packet.checkDistance(Vinfo.getX(), Vinfo.getY(), pWarning.getCoordX(), pWarning.getCoordY());
@@ -380,10 +419,12 @@ public class Veiculo {
                                         nodoDestinoIP = Vinfo.getCarIP();
                                         nodoDestino = Vinfo.getNodeNumber();
 
+                                        flagE = 1;
+
                                     }
                                 }
                             }
-                            if(flagE!=1){//caso nenhum vizinho estiver a menos de 100 m enviar para o mais proximo do "nodo em execesso de velocidade"
+                            if(flagE==1 && flagVizinhoNaAreaDeInteresseJaRecebeu==0){//caso nenhum vizinho estiver a menos de 100 m enviar para o mais proximo do "nodo em execesso de velocidade"
 
                                 List<Packet> listaPackets = new ArrayList<>();
                                 listaPackets.add(pWarning);
@@ -391,7 +432,9 @@ public class Veiculo {
                                 byte[] d = Packet.createPacketArray(listaPackets);
                                 DatagramPacket pack = new DatagramPacket(d, d.length, nodoDestinoIP, 4321);
                                 socketEnviar.send(pack);
-                                System.out.println("VEICULO: Warning enviado para " + nodoDestino + " (fora da área)\n");
+                                System.out.println("--------------------------Warning enviado--------------------------------------");
+                                System.out.println("VEICULO: Warning " + pWarning.getType() + " enviado para " + nodoDestino + " (fora da área)");
+                                System.out.println("------------------------------------------------------------------------------\n");
                             }
                         }
                         lockWarnings.lock();
@@ -399,15 +442,19 @@ public class Veiculo {
                             //warningsFromSv.addAll(DBlist);
                             //listaPackets = new ArrayList<>(DBlist);//adiconar tudo da data base! para ser encaminhado pelos nodos até ao RSU
                             warningsFromSv.clear();//limpar a Data Base depois de enviar!
-                            System.out.println("Warnings Database cleared ✓");
+                            System.out.println("------Warnings Database cleared ✓\n");
                         }finally {
                             lockWarnings.unlock();
                         }
                     }
 
+                    Thread.sleep(100);
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
 

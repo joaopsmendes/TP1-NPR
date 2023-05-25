@@ -49,6 +49,9 @@ public class Servidor{
         this.lockDB = new ReentrantLock();
 
         this.lockdadosParaServer = new ReentrantLock();
+
+        System.out.println("Server ON ✓\n");
+
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
@@ -77,6 +80,8 @@ public class Servidor{
                                 lockDB.lock();
                                 try{
                                     SVdatabase.add(p);
+                                    System.out.println("SV: Pacote adicionado à db: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
+
                                 }finally {
                                     lockDB.unlock();
                                 }
@@ -86,8 +91,7 @@ public class Servidor{
                                     veiculosEmRange.add(p.getIp());
                                 }
 
-                                System.out.println("SV: Pacote adicionado à db: [ "+ p.getType() + "|" + p.getIpaddress()+ "|" +p.getIp()+"|"+p.getVelocidade()+"|"+p.getEstadoPiso()+"|"+p.getCoordX()+"|"+p.getCoordY()+"]");
-                                //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
+                                 //System.out.println("Received Packet: ip=" + p.getIp() + ", coordX=" + p.getCoordX() + ", coordY=" + p.getCoordY() + ", estadoPiso=" + p.getEstadoPiso() + ", velocidade=" + p.getVelocidade());
                             }else{
 
                                 System.out.println("SV: Veiculo ["+p.getIp() + "] fora da area de interesse!\n");
@@ -120,6 +124,7 @@ public class Servidor{
 
                     if(!SVdatabase.isEmpty()){
 
+
                         for(Packet p : SVdatabase){
                             ArrayList<Packet> Lpacotes= new ArrayList<>();
                             int veloMax=0;
@@ -142,12 +147,15 @@ public class Servidor{
 
                             if(p.getVelocidade()>veloMax){
 
-                                Packet Psend = new Packet(packetCount++, null,nodoSujeito,p.getCoordX(),p.getCoordY(),piso,veloMax);
+                                Packet Psend = new Packet(packetCount++, ipRsu,nodoSujeito,p.getCoordX(),p.getCoordY(),piso,veloMax);
+                                Lpacotes.add(Psend);
                                 byte[] datab = Packet.createPacketArray(Lpacotes);
                                 DatagramPacket requestb = new DatagramPacket(datab,datab.length,ipRsu,4321);
                                 socketEnviar.send(requestb);
 
-                                System.out.println("SV: Mensagem de Warning encaminhada para o RSU !");
+                                System.out.println("-----------------------Warning enviado---------------------------------------");
+                                System.out.println("⚠ SV ⚠ : Veiculo "+p.getIp() +" em excesso de velocidade! Warning " +Psend.getType()+" encaminhado para o RSU !");
+                                System.out.println("------------------------------------------------------------------------------");
 
                             }
                         }
@@ -155,16 +163,21 @@ public class Servidor{
                         try{
                             //Lpacotes.addAll(SVdatabase);
                             SVdatabase.clear();
+                            System.out.println("Database (CAM msg) cleared ✓\n");
                         }finally {
                             lockDB.unlock();
                         }
+                    }else{
+                        //System.out.println("debug: database (CAM msgs) está vazia!");
                     }
 
-                    //Thread.sleep(10000);//10s
+                    Thread.sleep(200);//10s
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
 
@@ -179,20 +192,24 @@ public class Servidor{
                         DatagramPacket sendData = new DatagramPacket(dataForServer,dataForServer.length,ipServerRemoto,4321);
                         socketEnviar.send(sendData);
 
-                        System.out.println("SV: Dados enviados ao Servidor da Cloud-Remota !");
+                        System.out.println("SV: Dados enviados ao Servidor da Cloud-Remota ! IP server remoto:"+ ipServerRemoto);
 
                         lockdadosParaServer.lock();
                         try{
                             //Lpacotes.addAll(SVdatabase);
                             dadosParaServer.clear();
+                            System.out.println("Database (Dados para o server remoto) cleared ✓");
                         }finally {
                             lockdadosParaServer.unlock();
                         }
                     }
+                    Thread.sleep(5000);
                 }
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
 

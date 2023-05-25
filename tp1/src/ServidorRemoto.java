@@ -13,18 +13,22 @@ public class ServidorRemoto {
 
     public ServidorRemoto() throws IOException{
 
-        this.socketReceber = new DatagramSocket();
+        this.socketReceber = new DatagramSocket(4321);
         this.SVdatabase = new ArrayList<>();
+
+        System.out.println("Remote Server ON ✓ \n");
 
         new Thread(() -> { // THREAD PARA receber
             try {
                 while (true) {
-                    //Thread.sleep(1000);
+                    Thread.sleep(200);
 
                     byte[] bufferr = new byte[2048]; // Max size of a UDP packet
                     DatagramPacket arrayRecebido = new DatagramPacket(bufferr, bufferr.length);
 
                     socketReceber.receive(arrayRecebido);
+
+                    System.out.println("recebi coisas");
 
                     try {
                         byte[] receivedData = Arrays.copyOfRange(arrayRecebido.getData(), arrayRecebido.getOffset(), arrayRecebido.getLength());
